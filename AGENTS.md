@@ -146,8 +146,10 @@ it*. Follow all ten rules on every change.
 ## 10. CI & git rules
 
 - `.github/workflows/ci.yml` runs typecheck → lint → `validate:sgpc` →
-  Playwright on every push/PR. Keep the Playwright browser install step;
-  removing it breaks e2e.
+  Playwright on every push/PR. `.gitlab-ci.yml` is a deliberate mirror of it
+  (`verify` then `e2e` stages, same commands) for the GitLab copy of the repo —
+  **change both together** or the gates drift apart. Keep the Playwright browser
+  install step in both; removing it breaks e2e.
 - Commit messages follow the repo's imperative style
   (`"Five more features: …"`, `"Homepage: …"`). Never commit `next-env.d.ts`
   churn (dev↔build path flip), `.next/`, `test-results/`, or secrets. Verify

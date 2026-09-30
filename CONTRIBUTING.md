@@ -130,8 +130,9 @@ rely on.
 - [ ] `README.md` test count, diagrams, and structure map match the change.
 - [ ] PR description explains the problem, the fix, and how it was verified.
 
-CI (`.github/workflows/ci.yml`) runs typecheck → lint → `validate:sgpc` →
-Playwright on every push and PR.
+CI runs typecheck → lint → `validate:sgpc` → Playwright on every push and PR:
+`.github/workflows/ci.yml` on GitHub, and `.gitlab-ci.yml` on the GitLab copy.
+Both must stay in step — same gates, same order.
 
 ## Coding standards
 

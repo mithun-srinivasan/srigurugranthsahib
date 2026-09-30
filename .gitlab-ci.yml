@@ -1,0 +1,56 @@
+# .gitlab-ci.yml
+# ---------------------------------------------------------------------------
+# GitLab CI: mirror of .github/workflows/ci.yml.
+#
+# GitHub stays the primary remote; this pipeline runs on the GitLab mirror, so it
+# validates the mirrored state of `main` rather than the commit you just pushed.
+#
+# - `verify` mirrors the fast gates: typecheck + lint + SGPC calendar validation.
+#   `validate:sgpc` guards the no-code-change calendar release workflow: a
+#   malformed `public/data/sgpc-<year>.json` fails the run before it lands.
+# - `e2e` runs the Playwright suite, which serves `npm run dev` itself (see
+#   playwright.config.ts) and needs live BaniDB/SGPC access. Specs assert
+#   live-content *or* the designed fallback, so one slow upstream response
+#   retries once instead of failing the build.
+# - Chromium is installed via `playwright install --with-deps` rather than the
+#   mcr.microsoft.com/playwright image, so the browser version always tracks
+#   package-lock.json instead of drifting with a pinned image tag.
+
+image: node:22-bookworm
+
+stages:
+  - verify
+  - e2e
+
+variables:
+  # Keep npm's cache inside the project so the GitLab `cache` key can restore it.
+  npm_config_cache: .npm
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm/
+
+verify:
+  stage: verify
+  script:
+    - npm ci --prefer-offline
+    - npm run typecheck
+    - npm run lint
+    - npm run validate:sgpc
+
+e2e:
+  stage: e2e
+  # Chromium crashes on the docker executor's default 256 MB /dev/shm.
+  shm_size: "2gb"
+  script:
+    - npm ci --prefer-offline
+    - npx playwright install --with-deps chromium
+    - npm run test
+  artifacts:
+    when: on_failure
+    paths:
+      - test-results/
+    expire_in: 1 week

@@ -6,6 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8)](https://tailwindcss.com/)
 [![Tests](https://img.shields.io/badge/Playwright-34_tests-brightgreen)](https://playwright.dev/)
 [![CI](https://github.com/mithun-srinivasan/srigurugranthsahib/actions/workflows/ci.yml/badge.svg)](https://github.com/mithun-srinivasan/srigurugranthsahib/actions/workflows/ci.yml)
+[![GitLab Pipeline](https://gitlab.com/its-mithunsrinivasan/srigurugranthsahib/badges/main/pipeline.svg)](https://gitlab.com/its-mithunsrinivasan/srigurugranthsahib/-/pipelines)
 [![License](https://img.shields.io/badge/License-MIT-amber)](./LICENSE)
 
 A focused, verse-by-verse web reader for Sri Guru Granth Sahib Ji — all 1,430 Angs
@@ -341,6 +342,7 @@ sggs-reader/
 │   ├── more-features.spec.ts
 │   └── sgpc-calendar.spec.ts
 ├── .github/workflows/ci.yml        # CI: typecheck → lint → validate:sgpc → Playwright
+├── .gitlab-ci.yml                  # Same gates on the GitLab mirror (verify → e2e stages)
 ├── eslint.config.mjs               # ESLint (eslint-config-next, zero-error policy)
 ├── next.config.ts                  # Next.js config
 ├── tsconfig.json                   # TypeScript config (strict)
@@ -396,7 +398,7 @@ and switching, the Learn chart, Gurpurab Ang chips, Hindi/Spanish switching,
 pad-arth display, Nitnem pages, the daily goal tracker, visraam markers,
 Shabad of the Day, the heatmap, phonetic-search preview, verse share-card
 download, the calendar (month grid, ←/→ keyboard nav), the SGPC year JSON,
-top-bar hover reveal, and Hukamnama resolution with translation layers. CI (`.github/workflows/ci.yml`) runs typecheck,
+top-bar hover reveal, and Hukamnama resolution with translation layers. CI (`.github/workflows/ci.yml`, mirrored by `.gitlab-ci.yml`) runs typecheck,
 lint, `validate:sgpc`, and the full suite on every push/PR.
 
 ## SGPC calendar releases (no-code-change years)
