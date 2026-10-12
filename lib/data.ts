@@ -154,6 +154,7 @@ async function verifySgpcAudioUrl(url: string): Promise<string | undefined> {
 /** One verse as returned by BaniDB's `/v2/angs/:id` and `/v2/search` endpoints. */
 interface BaniDbVerseRaw {
   verseId?: number | string;
+  shabadId?: number | string;
   id?: number | string;
   verse?: { gurmukhi?: string; unicode?: string };
   transliteration?: {
@@ -174,6 +175,7 @@ interface BaniDbVerseRaw {
       ss?: { unicode?: string; gurmukhi?: string }; // Guru Granth Darpan (Prof. Sahib Singh)
       ft?: { unicode?: string; gurmukhi?: string }; // Faridkot Teeka (Sant Giani Badan Singh Ji)
       ms?: { unicode?: string; gurmukhi?: string }; // Punjabi rendering (SGPC, Bhai Manmohan Singh)
+      bdb?: { unicode?: string; gurmukhi?: string }; // BaniDB Punjabi fallback
       pss?: { unicode?: string; gurmukhi?: string }; // Word-by-word meanings (pad-arth)
     };
     hi?: {
@@ -285,6 +287,10 @@ function parseVisraam(
  * @param angNumber the Ang this verse belongs to (used only as a fallback id)
  * @param index     the verse position within the Ang (fallback id source)
  */
+function normalizedText(value: string | undefined): string {
+  return value?.normalize("NFC") ?? "";
+}
+
 function mapVerse(raw: BaniDbVerseRaw, angNumber: number, index: number): VerseLine {
   // BaniDB exposes the transliteration in four scripts; prefer the explicit
   // script keys and fall back to the older `english`/`hindi` aliases.
@@ -296,17 +302,38 @@ function mapVerse(raw: BaniDbVerseRaw, angNumber: number, index: number): VerseL
     ipa: tr.ipa ?? "",
   };
   return {
-    // Prefer the canonical verseId; fall back to id, then a synthetic position id.
-    id: String(raw.verseId ?? raw.id ?? `${angNumber}-${index}`),
+    // A verse id is the only stable cross-route anchor. Do not derive one
+    // from an Ang array position: upstream ordering can change independently.
+    verseId: String(raw.verseId ?? raw.id ?? ""),
+    shabadId: raw.shabadId == null ? undefined : String(raw.shabadId),
+    // BaniDB's `lineNo` repeats inside an Ang (for example on Ang 1098), so
+    // the ordered response position is the sole Ang-wide line counter.
+    lineNumberOnAng: index + 1,
+    sourceLineNo: raw.lineNo,
     // ⚠️ critical: `verse.gurmukhi` is a legacy ASCII-font encoding —
     //    we must always read `verse.unicode` for the real Gurmukhi text.
-    gurmukhi: raw.verse?.unicode ?? "",
-    transliteration: transliterations.en,
+    gurmukhi: normalizedText(raw.verse?.unicode),
+    transliteration: normalizedText(transliterations.en),
     transliterations,
     translations: {
-      en: raw.translation?.en?.bdb ?? undefined,
+      en: raw.translation?.en?.bdb ? normalizedText(raw.translation.en.bdb) : undefined,
       // Punjabi arrives as Gurmukhi text — try unicode first, then the fallback.
-      pu: raw.translation?.pu?.ss?.unicode ?? raw.translation?.pu?.ss?.gurmukhi ?? undefined,
+      // Section headings are intentionally untranslated in Guru Granth
+      // Darpan. Use SGPC's Punjabi rendering there rather than displaying a
+      // blank translation; both are sourced directly from BaniDB.
+      pu: raw.translation?.pu?.ss?.unicode
+        ? normalizedText(raw.translation.pu.ss.unicode)
+        : raw.translation?.pu?.ss?.gurmukhi
+          ? normalizedText(raw.translation.pu.ss.gurmukhi)
+          : raw.translation?.pu?.ms?.unicode
+            ? normalizedText(raw.translation.pu.ms.unicode)
+            : raw.translation?.pu?.ms?.gurmukhi
+              ? normalizedText(raw.translation.pu.ms.gurmukhi)
+              : raw.translation?.pu?.bdb?.unicode
+                ? normalizedText(raw.translation.pu.bdb.unicode)
+                : raw.translation?.pu?.bdb?.gurmukhi
+                  ? normalizedText(raw.translation.pu.bdb.gurmukhi)
+                  : undefined,
       hi: raw.translation?.hi?.ss ?? raw.translation?.hi?.sts ?? undefined,
       es: raw.translation?.es?.sn ?? undefined,
     },
@@ -338,7 +365,6 @@ function mapVerse(raw: BaniDbVerseRaw, angNumber: number, index: number): VerseL
     // `writer` may itself be null in the API, hence the double null-guard.
     writer: raw.writer?.english ?? undefined,
     pageNo: raw.pageNo,
-    lineNo: raw.lineNo,
   };
 }
 
@@ -358,7 +384,7 @@ function mapVerse(raw: BaniDbVerseRaw, angNumber: number, index: number): VerseL
 export const getAng = cache(
   async function getAng(angNumber: number): Promise<Ang | null> {
     // Reject out-of-range requests up-front instead of hitting the network.
-    if (angNumber < MIN_ANG || angNumber > MAX_ANG) return null;
+    if (!Number.isInteger(angNumber) || angNumber < MIN_ANG || angNumber > MAX_ANG) return null;
 
   try {
     const res = await fetchUpstream(`${BANIDB_BASE}/angs/${angNumber}`, {
@@ -497,7 +523,7 @@ export async function searchGurbani(term: string, lang: "pa" | "en" = "pa"): Pro
 
     // Keep the list focused: cap at 40 and only surface the fields we render.
     return rows.slice(0, 40).map((raw, i) => ({
-      id: String(raw.verseId ?? raw.id ?? i),
+      verseId: String(raw.verseId ?? raw.id ?? ""),
       angNumber: raw.pageNo ?? 1,
       gurmukhi: raw.verse?.unicode ?? "",
       translation: raw.translation?.en?.bdb ?? undefined,
@@ -518,6 +544,13 @@ export async function searchGurbani(term: string, lang: "pa" | "en" = "pa"): Pro
 export function clampAng(n: number): number {
   if (Number.isNaN(n)) return MIN_ANG;
   return Math.min(MAX_ANG, Math.max(MIN_ANG, n));
+}
+
+/** Parses an Ang route segment exactly; `1abc`, decimals, and signs are invalid. */
+export function parseAngParam(value: string): number | null {
+  if (!/^[1-9]\d*$/.test(value)) return null;
+  const ang = Number(value);
+  return Number.isSafeInteger(ang) && ang >= MIN_ANG && ang <= MAX_ANG ? ang : null;
 }
 
 /**
@@ -668,7 +701,8 @@ export async function getHukamnama(): Promise<HukamnamaInfo | null> {
       const alignEnglish = eChunks.length === gChunks.length;
 
       const lines: VerseLine[] = gChunks.map((chunk, i) => ({
-        id: `hs-${json.date ?? "daily"}-${i}`,
+        verseId: `hs-${json.date ?? "daily"}-${i}`,
+        lineNumberOnAng: i + 1,
         gurmukhi: `${chunk} ॥`,
         transliteration: "",
         transliterations: { en: "", hi: "", ur: "", ipa: "" },
@@ -677,7 +711,6 @@ export async function getHukamnama(): Promise<HukamnamaInfo | null> {
           pu: i === 0 ? punjabiFull || undefined : undefined,
         },
         pageNo: ang,
-        lineNo: i + 1,
       }));
 
       const fullLines: VerseLine[] =
@@ -685,7 +718,8 @@ export async function getHukamnama(): Promise<HukamnamaInfo | null> {
           ? lines
           : [
               {
-                id: `hs-${json.date ?? "daily"}-0`,
+                verseId: `hs-${json.date ?? "daily"}-0`,
+                lineNumberOnAng: 1,
                 gurmukhi: gurmukhiFull,
                 transliteration: "",
                 transliterations: { en: "", hi: "", ur: "", ipa: "" },
@@ -694,7 +728,6 @@ export async function getHukamnama(): Promise<HukamnamaInfo | null> {
                   pu: punjabiFull || undefined,
                 },
                 pageNo: ang,
-                lineNo: 1,
               },
             ];
 

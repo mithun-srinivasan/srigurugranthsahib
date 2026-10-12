@@ -78,7 +78,7 @@ export default async function BaniPage({ params }: PageProps) {
 
         {bani.verses.map((line) => (
           <VerseCard
-            key={line.id}
+            key={line.verseId}
             line={line}
             angNumber={
               line.pageNo && line.pageNo >= MIN_ANG && line.pageNo <= MAX_ANG ? line.pageNo : MIN_ANG

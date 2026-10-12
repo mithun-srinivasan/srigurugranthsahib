@@ -341,9 +341,9 @@ export default function SearchPage() {
 
             <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
               {results.map((r) => (
-                <li key={r.id}>
+                <li key={r.verseId}>
                   <Link
-                    href={`/ang/${r.angNumber}#${r.id}`}
+                    href={`/ang/${r.angNumber}#${r.verseId}`}
                     className="block py-4 transition hover:bg-[var(--surface-hover)]"
                   >
                     <span className="text-xs font-bold text-[var(--accent)]">Ang {r.angNumber}</span>

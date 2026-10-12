@@ -32,7 +32,7 @@
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getAng } from "@/lib/data";
+import { getAng, parseAngParam } from "@/lib/data";
 import { MAX_ANG, MIN_ANG } from "@/lib/types";
 import NavigationBar from "@/components/NavigationBar";
 import SwipeContainer from "@/components/SwipeContainer";
@@ -81,10 +81,10 @@ export function generateStaticParams() {
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const parsed = parseInt(id, 10);
+  const parsed = parseAngParam(id);
   // Never clamp here: an invalid id renders the 404, so its metadata must
   // not masquerade as a neighbouring valid Ang.
-  if (Number.isNaN(parsed) || parsed < MIN_ANG || parsed > MAX_ANG) {
+  if (parsed === null) {
     return { title: "Ang not found | Sri Guru Granth Sahib Ji" };
   }
   const angNumber = parsed;
@@ -98,10 +98,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function AngPage({ params }: PageProps) {
   const { id } = await params;
-  const parsed = parseInt(id, 10);
+  const parsed = parseAngParam(id);
 
   // Validate the Ang number; if invalid, render the custom not-found page.
-  if (Number.isNaN(parsed) || parsed < MIN_ANG || parsed > MAX_ANG) {
+  if (parsed === null) {
     notFound();
   }
 

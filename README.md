@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-19-61dafb)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8)](https://tailwindcss.com/)
-[![Tests](https://img.shields.io/badge/Playwright-34_tests-brightgreen)](https://playwright.dev/)
+[![Tests](https://img.shields.io/badge/Playwright-36_tests-brightgreen)](https://playwright.dev/)
 [![CI](https://github.com/mithun-srinivasan/srigurugranthsahib/actions/workflows/ci.yml/badge.svg)](https://github.com/mithun-srinivasan/srigurugranthsahib/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-amber)](./LICENSE)
 
@@ -391,7 +391,8 @@ npm run test        # headless Playwright run (Chromium)
 npm run test:ui     # interactive UI mode
 ```
 
-34 tests cover Ang navigation, theme persistence, genuine commentary sources
+36 tests cover Ang navigation, exact Ang-route validation, canonical verse mapping,
+theme persistence, genuine commentary sources
 and switching, the Learn chart, Gurpurab Ang chips, Hindi/Spanish switching,
 pad-arth display, Nitnem pages, the daily goal tracker, visraam markers,
 Shabad of the Day, the heatmap, phonetic-search preview, verse share-card

@@ -116,9 +116,9 @@ export default function VerseCard({
     []
   );
 
-  const saved = isBookmarked(line.id);
-  const highlight = getHighlight(line.id);
-  const note = getNote(line.id);
+  const saved = isBookmarked(line.verseId);
+  const highlight = getHighlight(line.verseId);
+  const note = getNote(line.verseId);
 
   // -- Transliteration ------------------------------------------------------------------
 
@@ -262,7 +262,7 @@ export default function VerseCard({
         transliteration: translit || line.transliteration || "",
         translation: primaryTranslation || punjabiTranslation || "",
         angNumber,
-        lineId: line.id,
+        lineId: line.verseId,
         baniToken,
         baniName,
       });
@@ -281,7 +281,9 @@ export default function VerseCard({
         fontSize: `${prefs.fontScale}rem`,
         ...(highlight ? { backgroundColor: HIGHLIGHT_TINTS[highlight] } : {}),
       }}
-      id={line.id}
+      id={line.verseId}
+      data-verse-id={line.verseId}
+      data-line-number-on-ang={line.lineNumberOnAng}
     >
       {/* Primary Scripture: Gurmukhi */}
       <p
@@ -422,7 +424,7 @@ export default function VerseCard({
         <div className="verse-extra mt-4 space-y-2">
           <textarea
             value={note?.text ?? ""}
-            onChange={(e) => setNote(line.id, e.target.value)}
+            onChange={(e) => setNote(line.verseId, e.target.value)}
             placeholder="Write a brief reflection on this verse…"
             aria-label="Verse note"
             rows={2}
@@ -431,7 +433,7 @@ export default function VerseCard({
           />
           {note && (
             <button
-              onClick={() => removeNote(line.id)}
+              onClick={() => removeNote(line.verseId)}
               className="text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] transition"
             >
               Delete note
@@ -445,8 +447,8 @@ export default function VerseCard({
         {/* Writer and line number (left-aligned, subdued text) */}
         <div className="flex items-center gap-2 text-[11px] text-[var(--text-faint)]">
           {line.writer && <span className="font-medium">{line.writer}</span>}
-          {line.writer && line.lineNo && <span>·</span>}
-          {line.lineNo && <span>Line {line.lineNo}</span>}
+          {line.writer && <span>·</span>}
+          <span>Line {line.lineNumberOnAng}</span>
         </div>
 
         {/* Action buttons — low-contrast by default; revealed on verse hover */}
@@ -492,7 +494,7 @@ export default function VerseCard({
                   <button
                     key={c}
                     onClick={() => {
-                      toggleHighlight(line.id, c);
+                      toggleHighlight(line.verseId, c);
                       setHighlightOpen(false);
                     }}
                     aria-label={`${HIGHLIGHT_LABELS[c]} highlight`}
@@ -524,7 +526,7 @@ export default function VerseCard({
           <button
             onClick={() =>
               toggleBookmark({
-                verseId: line.id,
+                verseId: line.verseId,
                 angNumber,
                 gurmukhiSnippet: line.gurmukhi.slice(0, 60),
                 ...(baniToken ? { bani: baniToken } : {}),

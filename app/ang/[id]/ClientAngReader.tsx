@@ -141,7 +141,7 @@ export default function ClientAngReader({
         {chain.map((segment) => (
           <div key={segment.ang}>
             {segment.lines.map((line) => (
-              <VerseCard key={line.id} line={line} angNumber={segment.ang} />
+              <VerseCard key={line.verseId} line={line} angNumber={segment.ang} />
             ))}
           </div>
         ))}

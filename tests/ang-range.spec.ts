@@ -77,4 +77,11 @@ test.describe("Ang Range Handling", () => {
     await page.waitForURL("**/ang/1430", { timeout: 60_000 });
     expect(page.url()).toContain("/ang/1430");
   });
+
+  test("rejects malformed route segments instead of coercing them to a nearby Ang", async ({ page }) => {
+    await page.goto("/ang/1abc");
+
+    await expect(page.locator("text=That Ang number is out of range")).toBeVisible();
+    await expect(page.locator('a[href="/ang/1"][class*="border"]').first()).toBeVisible();
+  });
 });

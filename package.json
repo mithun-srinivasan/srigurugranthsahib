@@ -23,6 +23,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "validate:sgpc": "node scripts/validate-sgpc.mjs",
+    "validate:gurbani": "node scripts/validate-gurbani.mjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui"
   },

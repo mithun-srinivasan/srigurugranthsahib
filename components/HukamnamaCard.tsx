@@ -488,7 +488,7 @@ export default function HukamnamaCard() {
           <div className="space-y-4">
             {hukamnama.lines.map((l) => (
               <div
-                key={l.id}
+                key={l.verseId}
                 className="min-w-0 space-y-1.5 border-l-2 border-[var(--accent)]/40 pl-3"
               >
                 {/* break-words: long Gurmukhi lines must wrap on 320 px

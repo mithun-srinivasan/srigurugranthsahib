@@ -27,7 +27,7 @@
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getAng } from "@/lib/data";
+import { getAng, parseAngParam } from "@/lib/data";
 import { MIN_ANG, MAX_ANG } from "@/lib/types";
 import PrintAng from "./PrintAng";
 import AngUnavailable from "../AngUnavailable";
@@ -54,10 +54,10 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const parsed = parseInt(id, 10);
+  const parsed = parseAngParam(id);
   // Never clamp here: an invalid id renders the 404, so its metadata must
   // not masquerade as a neighbouring valid Ang.
-  if (Number.isNaN(parsed) || parsed < MIN_ANG || parsed > MAX_ANG) {
+  if (parsed === null) {
     return {
       title: "Ang not found | Sri Guru Granth Sahib Ji",
       description: `That Ang number is out of range. Sri Guru Granth Sahib Ji spans Ang ${MIN_ANG} to ${MAX_ANG}.`,
@@ -75,8 +75,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PrintAngPage({ params }: PageProps) {
   const { id } = await params;
-  const parsed = parseInt(id, 10);
-  if (Number.isNaN(parsed) || parsed < MIN_ANG || parsed > MAX_ANG) notFound();
+  const parsed = parseAngParam(id);
+  if (parsed === null) notFound();
 
   const angNumber = parsed;
   const ang = await getAng(angNumber);
@@ -110,7 +110,7 @@ export default async function PrintAngPage({ params }: PageProps) {
 
         <article className="mt-8 space-y-7">
           {ang.lines.map((line) => (
-            <section key={line.id} className="break-inside-avoid border-b border-[var(--border-subtle)] pb-6">
+            <section key={line.verseId} className="break-inside-avoid border-b border-[var(--border-subtle)] pb-6">
               <p dir="auto" lang="pa" className="font-gurmukhi text-xl leading-[1.9] text-[var(--text)]">
                 {line.gurmukhi}
               </p>

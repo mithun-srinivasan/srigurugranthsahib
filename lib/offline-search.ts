@@ -36,7 +36,7 @@ const MAX_OFFLINE_RESULTS = 40;
 /** One indexed Ang: trimmed verses only, no commentary or metadata. */
 export interface OfflineAngEntry {
   ang: number;
-  verses: { id: string; gurmukhi: string; en?: string }[];
+  verses: { verseId: string; gurmukhi: string; en?: string }[];
   savedAt: number;
 }
 
@@ -79,7 +79,7 @@ function writeOfflineIndex(entries: OfflineAngEntry[]): void {
  */
 export function saveAngToOfflineIndex(
   angNumber: number,
-  lines: Pick<VerseLine, "id" | "gurmukhi" | "translations">[]
+  lines: Pick<VerseLine, "verseId" | "gurmukhi" | "translations">[]
 ): void {
   if (!lines || lines.length === 0) return;
   try {
@@ -87,7 +87,7 @@ export function saveAngToOfflineIndex(
     entries.push({
       ang: angNumber,
       verses: lines.map((l) => ({
-        id: String(l.id),
+        verseId: String(l.verseId),
         gurmukhi: l.gurmukhi,
         en: l.translations?.en ?? undefined,
       })),
@@ -129,7 +129,7 @@ export function searchOfflineIndex(term: string, mode: "pa" | "en"): SearchResul
         mode === "pa" ? squash(v.gurmukhi) : (v.en ?? "").toLowerCase();
       if (haystack && haystack.includes(needle)) {
         out.push({
-          id: v.id,
+          verseId: v.verseId,
           angNumber: entry.ang,
           gurmukhi: v.gurmukhi,
           translation: v.en,

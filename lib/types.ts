@@ -38,8 +38,14 @@ export type HighlightColor = "saffron" | "green" | "blue" | "rose";
  * `gurmukhi` is always the Unicode text — never the legacy ASCII font encoding.
  */
 export interface VerseLine {
-  /** Stable unique verse id — mirrors BaniDB's `verseId`. */
-  id: string;
+  /** Stable canonical verse identifier — mirrors BaniDB's `verseId`. */
+  verseId: string;
+  /** Canonical composition identifier — mirrors BaniDB's `shabadId` when supplied. */
+  shabadId?: string;
+  /** One-based, contiguous position of this tuk on its Ang. Never use an array index as an identifier. */
+  lineNumberOnAng: number;
+  /** Source-provided line metadata, retained for provenance but never displayed as an Ang line number. */
+  sourceLineNo?: number;
   /** Unicode Gurmukhi script text of the verse. */
   gurmukhi: string;
   /** Default (English) Roman-script transliteration — the legacy field name. */
@@ -94,8 +100,6 @@ export interface VerseLine {
   writer?: string;
   /** Page (Ang) number the verse belongs to, when provided by the API. */
   pageNo?: number;
-  /** Line number *within* the Ang, when provided by the API. */
-  lineNo?: number;
 }
 
 /**
@@ -112,7 +116,8 @@ export interface Ang {
 
 /** A single search hit, mapped from BaniDB's `/v2/search` response. */
 export interface SearchResult {
-  id: string;
+  /** Canonical BaniDB verse identifier used for the Ang fragment target. */
+  verseId: string;
   angNumber: number;
   gurmukhi: string;
   translation?: string;

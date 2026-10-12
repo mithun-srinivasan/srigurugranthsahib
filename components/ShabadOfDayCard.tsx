@@ -111,7 +111,7 @@ export default function ShabadOfDayCard() {
     );
   }
 
-  const firstId = shabad.verses[0]?.id;
+  const firstId = shabad.verses[0]?.verseId;
 
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md p-6 sm:p-8 shadow-[var(--shadow-subtle)]">
