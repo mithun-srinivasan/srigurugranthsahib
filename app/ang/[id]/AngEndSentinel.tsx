@@ -39,7 +39,7 @@ export default function AngEndSentinel({
   onEndReached: (ang: number) => Promise<boolean>;
 }) {
   const router = useRouter();
-  const { isAutoAdvance } = useReaderPrefs();
+  const { isAutoAdvance, isContinuousMode } = useReaderPrefs();
   const nextAng = angNumber + 1;
   const isLastAng = angNumber >= maxAng;
 
@@ -99,11 +99,13 @@ export default function AngEndSentinel({
   }, [isLastAng, nextAng, router]);
 
   // -- IntersectionObserver auto-advance -------------------------------------
-  // Only auto-advances when the user has opted in via isAutoAdvance pref.
+  // Auto-advances when the user has opted in via isAutoAdvance OR isContinuousMode pref.
   // The manual Continue button always works regardless.
 
+  const shouldAutoObserve = isAutoAdvance || isContinuousMode;
+
   useEffect(() => {
-    if (!isAutoAdvance || isLastAng || triggered) return;
+    if (!shouldAutoObserve || isLastAng || triggered) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -119,7 +121,7 @@ export default function AngEndSentinel({
     }
 
     return () => observer.disconnect();
-  }, [isAutoAdvance, isLastAng, triggered, handleAdvance]);
+  }, [shouldAutoObserve, isLastAng, triggered, handleAdvance]);
 
   // -- Final Ang: completion message -----------------------------------------
 

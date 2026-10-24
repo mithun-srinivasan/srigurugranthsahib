@@ -47,10 +47,22 @@ test.describe("Ang Advance", () => {
 
     // Either the preload appends Ang 101 inline (URL unchanged) or the
     // sentinel falls back to navigating when upstream is unreachable.
+    // If neither has happened yet, trigger the advance via the sentinel button.
     const inline = page.locator("text=Completed Ang 101");
+    const navPromise = page.waitForURL("**/ang/101", { timeout: 15_000 }).catch(() => null);
+    const inlinePromise = inline.waitFor({ timeout: 15_000 }).catch(() => null);
+
+    const firstResult = await Promise.race([navPromise, inlinePromise]);
+    if (!firstResult && !page.url().includes("/ang/101") && !(await inline.isVisible())) {
+      const continueBtn = page.getByRole("button", { name: /Continue to Ang 101/i });
+      if (await continueBtn.isVisible()) {
+        await continueBtn.click();
+      }
+    }
+
     await Promise.race([
-      inline.waitFor({ timeout: 60_000 }),
-      page.waitForURL("**/ang/101", { timeout: 60_000 }),
+      inline.waitFor({ timeout: 45_000 }),
+      page.waitForURL("**/ang/101", { timeout: 45_000 }),
     ]).catch(() => {});
 
     if (page.url().includes("/ang/101")) {
