@@ -33,7 +33,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getAng, parseAngParam } from "@/lib/data";
-import { MAX_ANG, MIN_ANG } from "@/lib/types";
+import { MAX_ANG, MIN_ANG, type Ang } from "@/lib/types";
 import NavigationBar from "@/components/NavigationBar";
 import SwipeContainer from "@/components/SwipeContainer";
 import DynamicAngHeader from "@/components/DynamicAngHeader";
@@ -88,7 +88,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Ang not found | Sri Guru Granth Sahib Ji" };
   }
   const angNumber = parsed;
-  const ang = await getAng(angNumber);
+  let ang: Ang | undefined;
+  try {
+    ang = await getAng(angNumber);
+  } catch {
+    // Failed to load scripture — return safe metadata so the page shell
+    // still renders (the body will show the retry card via the page's own
+    // try/catch). Never let metadata generation kill the whole page.
+    return {
+      title: `Ang ${angNumber} | Sri Guru Granth Sahib Ji`,
+      description: `Read Ang ${angNumber} of Sri Guru Granth Sahib Ji.`,
+    };
+  }
 
   return {
     title: `Ang ${angNumber}${ang?.raagNameEn ? ` — ${ang.raagNameEn}` : ""} | Sri Guru Granth Sahib Ji`,
@@ -106,11 +117,12 @@ export default async function AngPage({ params }: PageProps) {
   }
 
   const angNumber = parsed;
-  const ang = await getAng(angNumber);
-  // The number is valid but the scripture failed to load (offline / API
-  // down) — show the retry card, NOT the "out of range" 404 (that message is
-  // reserved for genuinely invalid numbers handled above).
-  if (!ang) {
+  let ang: Ang;
+  try {
+    ang = await getAng(angNumber);
+  } catch {
+    // Network failure, offline, or API downtime — render retry card
+    // (the error boundary will NOT cache this failure thanks to thrown error)
     return (
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] transition-colors icon-border">
         <NavigationBar angNumber={angNumber} />

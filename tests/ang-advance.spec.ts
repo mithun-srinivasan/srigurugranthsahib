@@ -34,7 +34,10 @@ test.describe("Ang Advance", () => {
     });
 
     await page.goto("/ang/100");
-    await page.waitForSelector("h1");
+    // The page resolves either to the reader (live scripture) or to
+    // AngUnavailable (upstream down) — both carry an <h1>. Upstream BaniDB
+    // can be transiently slow; give it a generous budget.
+    await page.waitForSelector("h1", { timeout: 30_000 });
 
     // Linger while "reading" so the background preload gets a head start.
     await page.waitForTimeout(3000);

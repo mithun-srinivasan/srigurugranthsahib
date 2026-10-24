@@ -50,7 +50,7 @@ import {
   Github,
 } from "lucide-react";
 import { MAX_ANG, MIN_ANG } from "@/lib/types";
-import { SACRED_VERSES, RAAG_SECTIONS, getRaagForAng } from "@/lib/homeConstants";
+import { SACRED_VERSES, RAAG_SECTIONS, getRaagForAng, TOTAL_CANONICAL_SECTIONS } from "@/lib/homeConstants";
 
 // -------------------------------------------------------------------------
 // Home page component
@@ -528,11 +528,11 @@ export default function HomePage() {
           </section>
 
           {/* -------------------------------------------------------------- */}
-          {/* 31 Main Raags & Major Sections — link card grid                 */}
+          {/* Canonical Raags & Major Sections — link card grid                 */}
           {/* -------------------------------------------------------------- */}
           <section className="space-y-6">
             <div className="text-center space-y-1">
-              <h3 className="text-lg font-bold text-[var(--text)]">31 Main Raags &amp; Major Sections</h3>
+              <h3 className="text-lg font-bold text-[var(--text)]">{TOTAL_CANONICAL_SECTIONS} Canonical Raags &amp; Major Sections</h3>
               <p className="text-xs text-[var(--text-muted)]">Jump directly to the starting Ang of any major section.</p>
             </div>
 
@@ -588,3 +588,10 @@ export default function HomePage() {
     </div>
   );
 }
+
+
+
+
+
+
+

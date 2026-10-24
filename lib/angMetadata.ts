@@ -35,7 +35,7 @@ export interface AngSection {
  *
  * Verified against BaniDB's `raagWithPage` field on boundary Angs.
  */
-const SECTIONS: { start: number; meta: AngSection }[] = [
+export const SECTIONS: { start: number; meta: AngSection }[] = [
   {
     start: 1,
     meta: {

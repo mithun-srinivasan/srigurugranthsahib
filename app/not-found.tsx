@@ -5,6 +5,8 @@
  * Themed with CSS variables, includes a "Reset local data" escape hatch.
  */
 
+"use client";
+
 import Link from "next/link";
 import { Search, Home, BookOpen, Trash2, RotateCcw } from "lucide-react";
 

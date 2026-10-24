@@ -28,7 +28,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getAng, parseAngParam } from "@/lib/data";
-import { MIN_ANG, MAX_ANG } from "@/lib/types";
+import { MIN_ANG, MAX_ANG, type Ang } from "@/lib/types";
 import PrintAng from "./PrintAng";
 import AngUnavailable from "../AngUnavailable";
 
@@ -65,9 +65,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
   const angNumber = parsed;
-  const ang = await getAng(angNumber);
+  let ang: Ang;
+  try {
+    ang = await getAng(angNumber);
+  } catch {
+    // Return metadata for failed load — the page will show retry card
+    return {
+      title: `Print Ang ${angNumber} | Sri Guru Granth Sahib Ji`,
+      description: `Print-ready view of Ang ${angNumber} of Sri Guru Granth Sahib Ji.`,
+      robots: { index: false },
+    };
+  }
   return {
-    title: `Print Ang ${angNumber}${ang?.raagNameEn ? ` — ${ang.raagNameEn}` : ""} | Sri Guru Granth Sahib Ji`,
+    title: `Print Ang ${angNumber}${ang.raagNameEn ? ` — ${ang.raagNameEn}` : ""} | Sri Guru Granth Sahib Ji`,
     description: `Print-ready view of Ang ${angNumber} of Sri Guru Granth Sahib Ji.`,
     robots: { index: false },
   };
@@ -79,10 +89,12 @@ export default async function PrintAngPage({ params }: PageProps) {
   if (parsed === null) notFound();
 
   const angNumber = parsed;
-  const ang = await getAng(angNumber);
-  // Valid number but the scripture failed to load (offline / API down) —
-  // show the retry card, not the "out of range" 404.
-  if (!ang) {
+  let ang: Ang;
+  try {
+    ang = await getAng(angNumber);
+  } catch {
+    // Valid number but the scripture failed to load (offline / API down) —
+    // show the retry card, not the "out of range" 404.
     return (
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
         <main className="mx-auto max-w-3xl px-6 py-8 sm:py-10">

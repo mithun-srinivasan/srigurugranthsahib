@@ -382,38 +382,51 @@ function mapVerse(raw: BaniDbVerseRaw, angNumber: number, index: number): VerseL
  * @returns the mapped Ang, or `null` when out of range / API unreachable
  */
 export const getAng = cache(
-  async function getAng(angNumber: number): Promise<Ang | null> {
+  async function getAng(angNumber: number): Promise<Ang> {
     // Reject out-of-range requests up-front instead of hitting the network.
-    if (!Number.isInteger(angNumber) || angNumber < MIN_ANG || angNumber > MAX_ANG) return null;
+    if (!Number.isInteger(angNumber) || angNumber < MIN_ANG || angNumber > MAX_ANG) {
+      throw new Error(`Invalid Ang number: ${angNumber}`);
+    }
 
-  try {
-    const res = await fetchUpstream(`${BANIDB_BASE}/angs/${angNumber}`, {
-      // `revalidate: false` — scripture is immutable, cache the response forever.
-      next: { revalidate: false },
-    });
-    if (!res.ok) return null;
+    try {
+      const res = await fetchUpstream(`${BANIDB_BASE}/angs/${angNumber}`, {
+        // `revalidate: false` — scripture is immutable, cache the response forever.
+        next: { revalidate: false },
+      });
+      if (!res.ok) {
+        throw new Error(`Upstream ${res.status} for Ang ${angNumber}`);
+      }
 
-    const data: BaniDbAngResponse = await res.json();
-    const rows = data.page ?? [];
-    if (rows.length === 0) return null;
+      const data: BaniDbAngResponse = await res.json();
+      const rows = data.page ?? [];
+      if (rows.length === 0) {
+        throw new Error(`Empty Ang ${angNumber} from BaniDB`);
+      }
 
-    // The `/angs` envelope carries no header — the Raag name comes from the
-    // verses themselves (`raag.unicode` for Gurmukhi, `raag.english` for
-    // the English equivalent used in browser-tab titles).
-    const raagName = rows.map((r) => r.raag?.unicode ?? undefined).find(Boolean);
-    const raagNameEn = rows.map((r) => r.raag?.english ?? undefined).find(Boolean);
+      // The `/angs` envelope carries no header — the Raag name comes from the
+      // verses themselves (`raag.unicode` for Gurmukhi, `raag.english` for
+      // the English equivalent used in browser-tab titles).
+      const raagName = rows.map((r) => r.raag?.unicode ?? undefined).find(Boolean);
+      const raagNameEn = rows.map((r) => r.raag?.english ?? undefined).find(Boolean);
 
-    return {
-      angNumber,
-      raagName,
-      raagNameEn,
-      source: data.source?.english ?? "Sri Guru Granth Sahib Ji",
-      lines: rows.map((raw, i) => mapVerse(raw, angNumber, i)),
-    };
-  } catch {
-      // Network failure, offline, or API downtime — fail soft so the page
-      // can render its not-found state gracefully instead of crashing.
-      return null;
+      // Verify no empty verseIds — each verse must have a stable identity.
+      const mappedLines = rows.map((raw, i) => mapVerse(raw, angNumber, i));
+      const emptyVerseIds = mappedLines.filter((v) => !v.verseId || v.verseId.trim() === "");
+      if (emptyVerseIds.length > 0) {
+        throw new Error(`Ang ${angNumber} has ${emptyVerseIds.length} verse(s) with empty verseId`);
+      }
+
+      return {
+        angNumber,
+        raagName,
+        raagNameEn,
+        source: data.source?.english ?? "Sri Guru Granth Sahib Ji",
+        lines: mappedLines,
+      };
+    } catch (err) {
+      // Re-throw so ISR does NOT cache the failure — the error boundary
+      // will render, and "Try again" will re-request on next visit.
+      throw err instanceof Error ? err : new Error(`Failed to load Ang ${angNumber}: ${String(err)}`);
     }
   }
 );

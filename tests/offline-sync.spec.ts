@@ -41,10 +41,11 @@ test.describe("Hukamnama on mobile", () => {
     );
     expect(overflow).toBeLessThanOrEqual(1);
 
-    // The opt-in reminder toggle renders in the card header.
+    // The opt-in reminder toggle renders in the card header. The Hukamnama
+    // card fetches live data; give it the same budget as the other checks.
     await expect(
       card.getByRole("button", { name: "Hukamnama reminders" })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 });
 
