@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import type { DailyShabad } from "@/lib/types";
 import { getDailyShabad } from "@/app/actions";
+import BorderBeam from "@/components/ui/BorderBeam";
 import { dayKey } from "./ProgressProvider";
 
 /** localStorage key for the date-keyed daily shabad cache. */
@@ -114,7 +115,10 @@ export default function ShabadOfDayCard() {
   const firstId = shabad.verses[0]?.verseId;
 
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md p-6 sm:p-8 shadow-[var(--shadow-subtle)]">
+    <section className="relative isolate overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md p-6 sm:p-8 shadow-[var(--shadow-subtle)]">
+      {/* Magic UI ambient border beam */}
+      <BorderBeam duration={16} delay={4} size={220} />
+
       <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3 text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
         <Sparkles size={14} />
         <span>Shabad of the Day</span>

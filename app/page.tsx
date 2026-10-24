@@ -29,6 +29,8 @@ import ShabadOfDayCard from "@/components/ShabadOfDayCard";
 import NitnemCard from "@/components/NitnemCard";
 import ReadingJourney from "@/components/ReadingJourney";
 import GurpurabCalendar from "@/components/GurpurabCalendar";
+import Particles from "@/components/ui/Particles";
+import ShinyText from "@/components/ui/ShinyText";
 import { KhandaIcon } from "@/components/SikhSymbols";
 import {
   BookOpen,
@@ -165,6 +167,8 @@ export default function HomePage() {
         />
         {/* Semi-transparent theme-coloured overlay with soft blur */}
         <div className="absolute inset-0 bg-[var(--bg)]/80 backdrop-blur-[2px] transition-colors" />
+        {/* Ambient celestial particles drifting over the night sky */}
+        <Particles quantity={35} color="var(--accent)" />
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -266,9 +270,11 @@ export default function HomePage() {
           {/* Hero Section                                                     */}
           {/* -------------------------------------------------------------- */}
           <section className="text-center space-y-6">
-            <p className="font-gurmukhi text-3xl sm:text-4xl text-[var(--accent)] font-semibold tracking-wide">
-              ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ
-            </p>
+            <ShinyText>
+              <p className="font-gurmukhi text-3xl sm:text-4xl font-semibold tracking-wide text-[var(--accent)]">
+                ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ
+              </p>
+            </ShinyText>
 
             <div className="space-y-2">
               <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text)] sm:text-5xl">
@@ -280,11 +286,14 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              {/* Resume (or start from Ang 1) */}
+              {/* Resume (or start from Ang 1) with subtle shimmer sheen */}
               <Link
                 href={`/ang/${lastReadAng || 1}`}
-                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-xs font-semibold text-white transition hover:opacity-90 active:scale-[0.97]"
+                className="group relative isolate flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--accent)] px-6 py-3 text-xs font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.97]"
               >
+                <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit] motion-reduce:hidden">
+                  <div className="absolute inset-[-100%] aspect-square [animation:shimmer-spin_3.5s_linear_infinite] [background:conic-gradient(from_0deg_at_50%_50%,transparent_0%,rgba(255,255,255,0.3)_15%,transparent_30%)]" />
+                </div>
                 <BookOpen size={16} />
                 <span>{lastReadAng ? `Resume Ang ${lastReadAng}` : "Begin Reading (Ang 1)"}</span>
               </Link>
@@ -352,6 +361,20 @@ export default function HomePage() {
               <div className="relative flex items-center py-2">
                 {/* Background track */}
                 <div className="absolute h-2.5 w-full rounded-full bg-[var(--border)]" />
+                {/* Visual landmark detent notches (inspired by interior.dev slider detents) */}
+                <div className="pointer-events-none absolute inset-x-0 h-2.5 flex items-center">
+                  {[1, 14, 262, 462, 917, 1430].map((angNum) => {
+                    const pct = ((angNum - 1) / (MAX_ANG - 1)) * 100;
+                    return (
+                      <span
+                        key={angNum}
+                        aria-hidden="true"
+                        className="absolute block h-1.5 w-0.5 -translate-x-1/2 rounded-full bg-[var(--text-faint)] opacity-40"
+                        style={{ left: `${pct}%` }}
+                      />
+                    );
+                  })}
+                </div>
                 {/* Filled progress bar */}
                 <div
                   className="absolute h-2.5 rounded-full bg-[var(--accent)] transition-all duration-75"
@@ -382,9 +405,9 @@ export default function HomePage() {
                     <button
                       key={angNum}
                       onClick={() => setTargetAng(angNum)}
-                      className={`rounded-md px-2 py-0.5 font-semibold transition ${
+                      className={`rounded-md px-2 py-0.5 font-semibold transition-all duration-150 active:scale-[0.93] ${
                         targetAng === angNum
-                          ? "bg-[var(--accent)] text-white"
+                          ? "bg-[var(--accent)] text-white shadow-sm"
                           : "bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text)]"
                       }`}
                     >

@@ -49,6 +49,7 @@ import type { HukamnamaInfo } from "@/lib/types";
 import { getTodaysHukamnama } from "@/app/actions";
 import { maybeNotifyHukamnama } from "@/lib/notifications";
 import HukamnamaNotifyButton from "@/components/HukamnamaNotifyButton";
+import BorderBeam from "@/components/ui/BorderBeam";
 
 /** localStorage key for the last successful Hukamnama (stale-copy fallback). */
 const HUKAM_CACHE_KEY = "sggs-hukamnama-cache";
@@ -393,7 +394,10 @@ export default function HukamnamaCard() {
   const hasEnglish = hukamnama.lines.some((l) => l.translations.en);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md p-6 sm:p-8 shadow-[var(--shadow-subtle)]">
+    <section className="relative isolate overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md p-6 sm:p-8 shadow-[var(--shadow-subtle)]">
+      {/* Magic UI ambient border beam */}
+      <BorderBeam duration={14} size={260} />
+
       {/* Card heading + date + reminder toggle */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] pb-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">

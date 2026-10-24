@@ -109,7 +109,14 @@ export async function fetchSgpcYear(year: number): Promise<SgpcYearData | null> 
     const res = await fetch(sgpcDataUrl(year), { signal: ctrl.signal });
     clearTimeout(timer);
     if (!res.ok) return null;
-    const json = await res.json();
+    const text = await res.text();
+    if (!text || !text.trim()) return null;
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return null;
+    }
     if (!isValidYearData(json, year)) return null;
     const data: SgpcYearData = {
       nanakshahiYear: year,

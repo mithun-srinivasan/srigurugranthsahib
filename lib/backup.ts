@@ -15,12 +15,22 @@
  * Backup file shape:
  *   { app, version, exportedAt, data: { bookmarks?, notes?, highlights?,
  *     progress?, prefs?, notifs? } }
+ *
+ * Storage keys are versioned (e.g., sgs-reader-bookmarks__v1) via lib/persist.ts.
+ * This module reads from versioned keys but falls back to unversioned keys for
+ * backward compatibility with existing users.
  */
 
 const BACKUP_APP = "sggs-reader";
 const BACKUP_VERSION = 1;
+const STORAGE_VERSION = 1; // Must match lib/persist.ts
 
-/** Every localStorage key included in a full backup. */
+/** Builds the versioned storage key. */
+function versionedKey(baseKey: string): string {
+  return `${baseKey}__v${STORAGE_VERSION}`;
+}
+
+/** Every localStorage key included in a full backup (base keys, unversioned). */
 export const BACKUP_KEYS = [
   "sgs-reader-bookmarks",
   "sgs-reader-notes",
@@ -39,12 +49,17 @@ export interface FullBackup {
   data: Partial<Record<BackupKey, unknown>>;
 }
 
-/** Reads every known key; missing keys are simply omitted from the snapshot. */
+/** Reads every known key; missing keys are simply omitted from the snapshot.
+ *  Tries versioned key first, falls back to unversioned for backward compat. */
 export function collectBackup(): FullBackup {
   const data: Partial<Record<BackupKey, unknown>> = {};
   for (const key of BACKUP_KEYS) {
     try {
-      const raw = localStorage.getItem(key);
+      // Try versioned key first (new format)
+      const vKey = versionedKey(key);
+      let raw = localStorage.getItem(vKey);
+      // Fall back to unversioned key for existing users
+      if (raw === null) raw = localStorage.getItem(key);
       if (raw !== null) data[key] = JSON.parse(raw);
     } catch {
       // Corrupt slice — skip it rather than failing the whole backup.
@@ -92,6 +107,7 @@ export function lastBackupAt(): string | null {
  * that parse to an object/array, and returns how many slices were restored.
  * Returns 0 when the file is not a valid backup.  Callers should reload the
  * page on success so all providers rehydrate.
+ * Writes to versioned keys (sgs-reader-XXX__v1) for the new persist.ts format.
  */
 export function restoreBackup(json: string): number {
   let parsed: unknown;
@@ -116,7 +132,8 @@ export function restoreBackup(json: string): number {
     if (slice === undefined) continue;
     if (typeof slice !== "object" || slice === null) continue;
     try {
-      localStorage.setItem(key, JSON.stringify(slice));
+      // Write to versioned key for new persist.ts format
+      localStorage.setItem(versionedKey(key), JSON.stringify(slice));
       restored += 1;
     } catch {
       // Quota — keep restoring the remaining slices.

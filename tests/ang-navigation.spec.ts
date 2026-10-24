@@ -76,8 +76,9 @@ test.describe("Ang Navigation", () => {
 
     // The provider debounces writes to localStorage by 500ms — poll for the
     // final value to avoid racing the debounce timer.
+    // Storage key is now versioned: sgs-reader-prefs__v1
     await page.waitForFunction(() => {
-      const raw = localStorage.getItem("sgs-reader-prefs");
+      const raw = localStorage.getItem("sgs-reader-prefs__v1");
       if (!raw) return false;
       const prefs = JSON.parse(raw);
       return prefs.theme === "dark";
@@ -85,7 +86,7 @@ test.describe("Ang Navigation", () => {
 
     // Read the value back and assert it.
     const prefs = await page.evaluate(() => {
-      const raw = localStorage.getItem("sgs-reader-prefs");
+      const raw = localStorage.getItem("sgs-reader-prefs__v1");
       return raw ? JSON.parse(raw) : null;
     });
     expect(prefs).not.toBeNull();
@@ -97,14 +98,14 @@ test.describe("Ang Navigation", () => {
     await sepiaThemeButton.click();
 
     await page.waitForFunction(() => {
-      const raw = localStorage.getItem("sgs-reader-prefs");
+      const raw = localStorage.getItem("sgs-reader-prefs__v1");
       if (!raw) return false;
       const prefs = JSON.parse(raw);
       return prefs.theme === "sepia";
     }, undefined, { timeout: 5_000 });
 
     const prefsSepia = await page.evaluate(() => {
-      const raw = localStorage.getItem("sgs-reader-prefs");
+      const raw = localStorage.getItem("sgs-reader-prefs__v1");
       return raw ? JSON.parse(raw) : null;
     });
     expect(prefsSepia.theme).toBe("sepia");

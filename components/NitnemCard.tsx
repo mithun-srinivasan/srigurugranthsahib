@@ -11,10 +11,14 @@
 import Link from "next/link";
 import { ArrowRight, MoonStar } from "lucide-react";
 import { NITNEM_BANIS } from "@/lib/nitnem";
+import BorderBeam from "@/components/ui/BorderBeam";
 
 export default function NitnemCard() {
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md p-6 sm:p-8 shadow-[var(--shadow-subtle)]">
+    <section className="relative isolate overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md p-6 sm:p-8 shadow-[var(--shadow-subtle)]">
+      {/* Magic UI ambient border beam */}
+      <BorderBeam duration={18} delay={8} size={240} />
+
       <h2 className="flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3 text-base font-bold text-[var(--text)]">
         <MoonStar size={18} className="text-[var(--accent)]" />
         <span>Daily Nitnem</span>

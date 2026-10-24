@@ -21,6 +21,7 @@
 
 import { Minus, Plus, Sun, Moon, Coffee } from "lucide-react";
 import { useReaderPrefs } from "./ReaderPrefsProvider";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 import type { CommentaryLang, CommentarySource, ThemeMode, TranslationLang, TranslitStyle } from "@/lib/types";
 
 /** Available themes and their display metadata. */
@@ -141,22 +142,13 @@ export default function ReaderControls() {
         </button>
 
         {prefs.showTranslation && (
-          <div className="flex items-center rounded-lg border border-[var(--border)] p-0.5">
-            {LANGS.map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => prefs.setTranslationLang(id)}
-                aria-pressed={prefs.translationLang === id}
-                className={`min-h-[40px] px-3 text-xs font-semibold transition rounded ${
-                  prefs.translationLang === id
-                    ? "bg-[var(--accent)] text-white"
-                    : "text-[var(--text-muted)] hover:text-[var(--text)]"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={LANGS.map(({ id, label }) => ({ value: id, label }))}
+            value={prefs.translationLang}
+            onChange={(val) => prefs.setTranslationLang(val as TranslationLang)}
+            ariaLabel="Translation language"
+            size="sm"
+          />
         )}
       </div>
 
@@ -235,16 +227,16 @@ export default function ReaderControls() {
           </div>
 
           {/* Theme picker */}
-          <div className="flex items-center rounded-lg border border-[var(--border)]">
+          <div className="flex items-center rounded-xl border border-[var(--border)] bg-[var(--surface-hover)] p-0.5">
             {THEMES.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => prefs.setTheme(id)}
                 aria-label={`${label} theme`}
                 aria-pressed={prefs.theme === id}
-                className={`flex h-11 w-11 items-center justify-center transition ${
+                className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150 active:scale-[0.93] ${
                   prefs.theme === id
-                    ? "bg-[var(--accent)] text-white"
+                    ? "bg-[var(--accent)] text-white shadow-sm"
                     : "text-[var(--text-muted)] hover:text-[var(--text)]"
                 }`}
               >

@@ -92,7 +92,7 @@ export default function VerseCard({
   const prefs = useReaderPrefs();
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const { getHighlight, toggleHighlight } = useHighlights();
-  const { getNote, setNote, removeNote } = useVerseNotes();
+  const { getNote, setNote, saveNote, removeNote } = useVerseNotes();
 
   /** "Copied!" confirmation flag (resets after 2s). */
   const [copied, setCopied] = useState(false);
@@ -425,6 +425,7 @@ export default function VerseCard({
           <textarea
             value={note?.text ?? ""}
             onChange={(e) => setNote(line.verseId, e.target.value)}
+            onBlur={(e) => saveNote(line.verseId, e.target.value)}
             placeholder="Write a brief reflection on this verse…"
             aria-label="Verse note"
             rows={2}
@@ -453,24 +454,46 @@ export default function VerseCard({
 
         {/* Action buttons — low-contrast by default; revealed on verse hover */}
         <div className="verse-extra flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
-          {/* Copy verse text */}
+          {/* Copy verse text with interior.dev micro-interaction */}
           <button
             onClick={handleCopy}
             aria-label="Copy verse text"
             title={copied ? "Copied to clipboard" : "Copy verse"}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-[var(--text-muted)] transition hover:bg-[var(--surface-active)] hover:text-[var(--text)] active:scale-[0.97]"
+            className="group/copy relative flex h-11 w-11 items-center justify-center rounded-lg text-[var(--text-muted)] transition-all duration-150 hover:bg-[var(--surface-active)] hover:text-[var(--text)] active:scale-[0.92]"
           >
-            {copied ? <Check size={16} className="text-[var(--accent)]" /> : <Copy size={16} />}
+            <Copy
+              size={16}
+              className={`transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                copied
+                  ? "scale-50 rotate-45 opacity-0 pointer-events-none"
+                  : "scale-100 rotate-0 opacity-100"
+              }`}
+            />
+            <Check
+              size={16}
+              className={`absolute text-[var(--accent)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                copied
+                  ? "scale-100 rotate-0 opacity-100"
+                  : "scale-50 -rotate-45 opacity-0 pointer-events-none"
+              }`}
+            />
+            <span role="status" aria-live="polite" className="sr-only">
+              {copied ? "Copied to clipboard" : ""}
+            </span>
           </button>
 
-          {/* Share as card image */}
+          {/* Share as card image with spring feedback */}
           <button
             onClick={handleShare}
             aria-label="Share verse as image"
             title={shared ? "Image downloaded" : "Share as image"}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-[var(--text-muted)] transition hover:bg-[var(--surface-active)] hover:text-[var(--text)] active:scale-[0.97]"
+            className="relative flex h-11 w-11 items-center justify-center rounded-lg text-[var(--text-muted)] transition-all duration-150 hover:bg-[var(--surface-active)] hover:text-[var(--text)] active:scale-[0.92]"
           >
-            {shared ? <Check size={16} className="text-[var(--accent)]" /> : <Share2 size={16} />}
+            {shared ? (
+              <Check size={16} className="text-[var(--accent)] animate-in zoom-in-95 duration-150" />
+            ) : (
+              <Share2 size={16} />
+            )}
           </button>
 
           {/* Highlights — colour picker popover */}

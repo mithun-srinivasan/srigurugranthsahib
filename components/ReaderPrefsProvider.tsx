@@ -19,6 +19,12 @@
  *   - Mirrors **Focus mode** (feature 3) onto <html data-focus-mode> so the
  *     CSS can hide the navigation bars.
  *
+ * Migrated to use the shared `lib/persist.ts` helper for:
+ *   - Runtime validation with bad-item dropping
+ *   - Versioned storage keys
+ *   - 500ms debounce + immediate flush on pagehide/visibilitychange
+ *   - Quota error surfacing
+ *
  * Consume with the `useReaderPrefs()` hook from any client component.
  */
 
@@ -31,10 +37,10 @@ import {
   useState,
   useCallback,
   useMemo,
-  useRef,
   type ReactNode,
 } from "react";
 import type { CommentaryLang, CommentarySource, ReaderPrefs, ThemeMode, TranslationLang, TranslitStyle } from "@/lib/types";
+import { createPersistHook, createValidator, validateString, validateNumber, validateBoolean, validateOptional } from "@/lib/persist";
 
 /** localStorage key where reader preferences are persisted. */
 const STORAGE_KEY = "sgs-reader-prefs";
@@ -90,6 +96,10 @@ interface ReaderPrefsContextValue extends ReaderPrefs {
   toggleVisraam: () => void;
   toggleTapToTranslit: () => void;
   setTranslitStyle: (style: TranslitStyle) => void;
+  /** Hydration state. */
+  hydrated: boolean;
+  /** Quota error signal (storage full / not saved). */
+  quotaError: Error | null;
 }
 
 /** Internal context — `null` before the provider is mounted. */
@@ -184,62 +194,115 @@ function sanitizePrefs(raw: unknown): ReaderPrefs {
   return prefs;
 }
 
+/** Validator for the full prefs object using persist.ts helpers. */
+function validatePrefs(raw: unknown): { ok: true; data: ReaderPrefs } | { ok: false; reason: string } {
+  if (typeof raw !== "object" || raw === null) {
+    return { ok: false, reason: "prefs: not an object" };
+  }
+  const obj = raw as Record<string, unknown>;
+  const prefs: Partial<ReaderPrefs> = {};
+
+  // theme
+  const themeResult = validateOptional(obj.theme, (v) =>
+    typeof v === "string" && VALID_THEMES.includes(v as ThemeMode)
+      ? { ok: true, data: v as ThemeMode }
+      : { ok: false, reason: "prefs.theme: invalid" }
+  , "prefs.theme");
+  if (themeResult.ok && themeResult.data !== undefined) prefs.theme = themeResult.data;
+
+  // translationLang
+  const translationLangResult = validateOptional(obj.translationLang, (v) =>
+    typeof v === "string" && VALID_TRANSLATIONS.includes(v as TranslationLang)
+      ? { ok: true, data: v as TranslationLang }
+      : { ok: false, reason: "prefs.translationLang: invalid" }
+  , "prefs.translationLang");
+  if (translationLangResult.ok && translationLangResult.data !== undefined) prefs.translationLang = translationLangResult.data;
+
+  // translitStyle
+  const translitStyleResult = validateOptional(obj.translitStyle, (v) =>
+    typeof v === "string" && VALID_TRANSLIT_STYLES.includes(v as TranslitStyle)
+      ? { ok: true, data: v as TranslitStyle }
+      : { ok: false, reason: "prefs.translitStyle: invalid" }
+  , "prefs.translitStyle");
+  if (translitStyleResult.ok && translitStyleResult.data !== undefined) prefs.translitStyle = translitStyleResult.data;
+
+  // commentaryLang
+  const commentaryLangResult = validateOptional(obj.commentaryLang, (v) =>
+    typeof v === "string" && VALID_COMMENTARY_LANGS.includes(v as CommentaryLang)
+      ? { ok: true, data: v as CommentaryLang }
+      : { ok: false, reason: "prefs.commentaryLang: invalid" }
+  , "prefs.commentaryLang");
+  if (commentaryLangResult.ok && commentaryLangResult.data !== undefined) prefs.commentaryLang = commentaryLangResult.data;
+
+  // commentarySource
+  const commentarySourceResult = validateOptional(obj.commentarySource, (v) =>
+    typeof v === "string" && VALID_COMMENTARY_SOURCES.includes(v as CommentarySource)
+      ? { ok: true, data: v as CommentarySource }
+      : { ok: false, reason: "prefs.commentarySource: invalid" }
+  , "prefs.commentarySource");
+  if (commentarySourceResult.ok && commentarySourceResult.data !== undefined) prefs.commentarySource = commentarySourceResult.data;
+
+  // accentHex
+  const accentHexResult = validateOptional(obj.accentHex, (v) =>
+    v === null || (typeof v === "string" && HEX_RE.test(v))
+      ? { ok: true, data: v as string | null }
+      : { ok: false, reason: "prefs.accentHex: invalid" }
+  , "prefs.accentHex");
+  if (accentHexResult.ok && accentHexResult.data !== undefined) prefs.accentHex = accentHexResult.data;
+
+  // fontScale
+  const fontScaleResult = validateOptional(obj.fontScale, (v) =>
+    typeof v === "number" && !Number.isNaN(v)
+      ? { ok: true, data: Math.min(1.6, Math.max(0.8, v)) }
+      : { ok: false, reason: "prefs.fontScale: invalid" }
+  , "prefs.fontScale");
+  if (fontScaleResult.ok && fontScaleResult.data !== undefined) prefs.fontScale = fontScaleResult.data;
+
+  // Boolean fields
+  const boolKeys: Array<keyof ReaderPrefs> = [
+    "showTransliteration",
+    "showTranslation",
+    "isLareevarMode",
+    "isContinuousMode",
+    "isFocusMode",
+    "isAutoTheme",
+    "isOledTheme",
+    "isMemorizationMode",
+    "isParallelTranslations",
+    "showKanji",
+    "showWordMeanings",
+    "showVisraam",
+    "isTapToTranslit",
+  ];
+  for (const key of boolKeys) {
+    const boolResult = validateOptional(obj[key], (v) =>
+      typeof v === "boolean" ? { ok: true, data: v } : { ok: false, reason: `prefs.${key}: not a boolean` }
+    , `prefs.${key}`);
+    if (boolResult.ok && boolResult.data !== undefined) (prefs as Record<string, unknown>)[key] = boolResult.data;
+  }
+
+  return { ok: true, data: { ...DEFAULT_PREFS, ...prefs } as ReaderPrefs };
+}
+
+/** Validator for the full prefs object. */
+const prefsValidator = createValidator<ReaderPrefs>(1, validatePrefs);
+
+/** Persisted slice hook for prefs. */
+const usePersistedPrefs = createPersistHook<ReaderPrefs>({
+  key: STORAGE_KEY,
+  validator: prefsValidator,
+  defaultValue: DEFAULT_PREFS,
+});
+
 export function ReaderPrefsProvider({ children }: { children: ReactNode }) {
   /** Current preference state. Starts as defaults; hydrated from localStorage once. */
-  const [prefs, setPrefs] = useState<ReaderPrefs>(DEFAULT_PREFS);
+  const [prefs, setPrefs, hydrated, quotaError] = usePersistedPrefs();
 
   /**
    * `hydrated` guards against writing the defaults TO localStorage before
    * we've had a chance to READ the stored values — without this, the stored
    * data would be instantly overwritten on first paint.
    */
-  const [hydrated, setHydrated] = useState(false);
-
-  /** Ref mirror of `prefs` so the debounced persist callback always reads the latest. */
-  const prefsRef = useRef<ReaderPrefs>(DEFAULT_PREFS);
-
-  /** Debounce timer handle — cancelled on every prefs change. */
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // -- Hydration: read once from localStorage on mount -----------------------
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate SSR-safe post-mount hydration from localStorage
-      if (raw) setPrefs(sanitizePrefs(JSON.parse(raw)));
-    } catch {
-      // Malformed localStorage data is ignored; defaults are used instead.
-    } finally {
-      setHydrated(true);
-    }
-  }, []);
-
-  // -- Keep the ref mirror current with every state change -------------------
-
-  useEffect(() => {
-    if (!hydrated) return;
-    prefsRef.current = prefs;
-  }, [prefs, hydrated]);
-
-  // -- Debounced persistence: write to localStorage after 500ms of inactivity
-
-  const persistPrefs = useCallback(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(prefsRef.current));
-    } catch {
-      // Storage quota exceeded or unavailable (e.g. private browsing edge cases)
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return; // don't write defaults before hydration
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(persistPrefs, 500);
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [prefs, hydrated, persistPrefs]);
 
   // -- Auto-theme: track the system colour-scheme when Auto Theme is on ------
 
@@ -349,8 +412,10 @@ export function ReaderPrefsProvider({ children }: { children: ReactNode }) {
       toggleTapToTranslit: toggleBool("isTapToTranslit"),
       setTranslitStyle: (translitStyle: TranslitStyle) =>
         setPrefs((p) => ({ ...p, translitStyle })),
+      hydrated,
+      quotaError,
     };
-  }, [prefs]);
+  }, [prefs, setPrefs, hydrated, quotaError]);
 
   return (
     <ReaderPrefsContext.Provider value={value}>

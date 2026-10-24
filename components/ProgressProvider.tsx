@@ -14,6 +14,12 @@
  * hydration flag, and is debounced 500ms on write, mirroring the other
  * providers.
  *
+ * Migrated to use the shared `lib/persist.ts` helper for:
+ *   - Runtime validation with bad-item dropping
+ *   - Versioned storage keys
+ *   - 500ms debounce + immediate flush on pagehide/visibilitychange
+ *   - Quota error surfacing
+ *
  * Consume with `useReadingProgress()`.
  */
 
@@ -26,11 +32,11 @@ import {
   useState,
   useCallback,
   useMemo,
-  useRef,
   type ReactNode,
 } from "react";
 import type { ReadingProgress } from "@/lib/types";
 import { MAX_ANG, MIN_ANG } from "@/lib/types";
+import { createPersistHook, createValidator, validateArray, validateNumber, validateString, validateRecord, validateOptional } from "@/lib/persist";
 
 /** localStorage key for the reading-progress blob. */
 const STORAGE_KEY = "sgs-reader-progress";
@@ -58,6 +64,90 @@ function normalizeGoal(value: unknown): number {
     ? Math.max(0, Math.min(50, Math.round(value)))
     : 0;
 }
+
+/** Validator for a single history entry. */
+function validateHistoryEntry(raw: unknown): { ok: true; data: { ang: number; at: number } } | { ok: false; reason: string } {
+  if (typeof raw !== "object" || raw === null) {
+    return { ok: false, reason: "history: not an object" };
+  }
+  const obj = raw as Record<string, unknown>;
+
+  const angResult = validateNumber(obj.ang, "history.ang", { integer: true, min: MIN_ANG, max: MAX_ANG });
+  if (!angResult.ok) return angResult;
+
+  const atResult = validateNumber(obj.at, "history.at", { integer: true, min: 0 });
+  if (!atResult.ok) return atResult;
+
+  return {
+    ok: true,
+    data: { ang: angResult.data, at: atResult.data },
+  };
+}
+
+/** Validator for the ReadingProgress object. */
+function validateReadingProgress(raw: unknown): { ok: true; data: ReadingProgress } | { ok: false; reason: string } {
+  if (typeof raw !== "object" || raw === null) {
+    return { ok: false, reason: "progress: not an object" };
+  }
+  const obj = raw as Record<string, unknown>;
+
+  // readAngs: array of integers 1-1430
+  const readAngsResult = validateArray(obj.readAngs, (item) =>
+    validateNumber(item, "readAngs.item", { integer: true, min: MIN_ANG, max: MAX_ANG }), "readAngs");
+  if (!readAngsResult.ok) return readAngsResult;
+
+  // visits: record of string -> number
+  const visitsResult = validateRecord(obj.visits, (v) => validateNumber(v, "visits.value", { integer: true, min: 0 }), "visits");
+  if (!visitsResult.ok) return visitsResult;
+
+  // history: array of { ang, at }
+  const historyResult = validateArray(obj.history, validateHistoryEntry, "history");
+  if (!historyResult.ok) return historyResult;
+
+  // plan: optional { startDate: string, totalDays: number }
+  const planResult = validateOptional(obj.plan, (v) => {
+    if (typeof v !== "object" || v === null) return { ok: false, reason: "plan: not an object" };
+    const p = v as Record<string, unknown>;
+    const startDateResult = validateString(p.startDate, "plan.startDate");
+    if (!startDateResult.ok) return startDateResult;
+    const totalDaysResult = validateNumber(p.totalDays, "plan.totalDays", { integer: true, min: 1, max: 1430 });
+    if (!totalDaysResult.ok) return totalDaysResult;
+    return {
+      ok: true,
+      data: { startDate: startDateResult.data, totalDays: totalDaysResult.data },
+    };
+  }, "plan");
+  if (!planResult.ok) return planResult;
+
+  // dailyGoal: number 0-50
+  const dailyGoalResult = validateNumber(obj.dailyGoal, "dailyGoal", { min: 0, max: 50 });
+  if (!dailyGoalResult.ok) return dailyGoalResult;
+
+  return {
+    ok: true,
+    data: {
+      readAngs: readAngsResult.data,
+      visits: visitsResult.data,
+      history: historyResult.data,
+      plan: planResult.data ?? null,
+      dailyGoal: dailyGoalResult.data,
+    } satisfies ReadingProgress,
+  };
+}
+
+/** Validator for the full progress object. */
+const progressValidator = createValidator<ReadingProgress>(1, (raw: unknown) => {
+  const result = validateReadingProgress(raw);
+  if (!result.ok) return { ok: true, data: EMPTY };
+  return { ok: true, data: result.data };
+});
+
+/** Persisted slice hook for progress. */
+const usePersistedProgress = createPersistHook<ReadingProgress>({
+  key: STORAGE_KEY,
+  validator: progressValidator,
+  defaultValue: EMPTY,
+});
 
 /** Public context API. */
 interface ProgressContextValue extends ReadingProgress {
@@ -88,49 +178,14 @@ interface ProgressContextValue extends ReadingProgress {
   todaysAngCount: number;
   /** Set the daily Sehaj Paath goal (angs/day, clamped 0–50; 0 clears it). */
   setDailyGoal: (angs: number) => void;
+  /** Quota error signal (storage full / not saved). */
+  quotaError: Error | null;
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
-  const [progress, setProgress] = useState<ReadingProgress>(EMPTY);
-  const [hydrated, setHydrated] = useState(false);
-  const ref = useRef<ReadingProgress>(EMPTY);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // -- Hydration -------------------------------------------------------------
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate SSR-safe post-mount hydration from localStorage
-      if (raw) setProgress({ ...EMPTY, ...JSON.parse(raw) });
-    } catch {
-      // corrupt storage — fall back to empty
-    } finally {
-      setHydrated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    ref.current = progress;
-  }, [progress, hydrated]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(ref.current));
-      } catch {
-        // quota / private mode
-      }
-    }, 500);
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [progress, hydrated]);
+  const [progress, setProgress, hydrated, quotaError] = usePersistedProgress();
 
   // -- Actions ---------------------------------------------------------------
 
@@ -143,7 +198,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       const history = [...p.history.filter((h) => h.ang !== ang), { ang, at: now }].slice(-60);
       return { ...p, readAngs, visits, history };
     });
-  }, []);
+  }, [setProgress]);
 
   const isAngRead = useCallback((ang: number) => progress.readAngs.includes(ang), [progress.readAngs]);
 
@@ -152,18 +207,18 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       ...p,
       plan: { startDate: dayKey(), totalDays: Math.max(1, Math.min(1430, totalDays)) },
     }));
-  }, []);
+  }, [setProgress]);
 
   const clearPlan = useCallback(() => {
     setProgress((p) => ({ ...p, plan: null }));
-  }, []);
+  }, [setProgress]);
 
   const setDailyGoal = useCallback((angs: number) => {
     setProgress((p) => ({
       ...p,
       dailyGoal: Math.max(0, Math.min(50, Math.round(angs) || 0)),
     }));
-  }, []);
+  }, [setProgress]);
 
   const value = useMemo((): ProgressContextValue => {
     /** Consecutive days (>=1) with a read, counting forward from today. */
@@ -234,8 +289,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       planContinueAng,
       todaysAngCount,
       setDailyGoal,
+      quotaError,
     };
-  }, [progress, hydrated, markAngRead, isAngRead, startPlan, clearPlan, setDailyGoal]);
+  }, [progress, hydrated, markAngRead, isAngRead, startPlan, clearPlan, setDailyGoal, quotaError]);
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
 }
