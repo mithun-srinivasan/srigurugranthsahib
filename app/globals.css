@@ -42,9 +42,9 @@
   --border-highlight: rgba(0, 0, 0, 0.12);
   --text: #0C0A09;
   --text-secondary: #44403C;
-  --text-muted: #78716C;
-  --text-faint: #A8A29E;
-  --accent: #B45309;
+  --text-muted: #404040;
+  --text-faint: #373737;
+  --accent: #92400E;
   --accent-light: rgba(180, 83, 9, 0.08);
   --accent-glow: rgba(180, 83, 9, 0.15);
   --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 4px 12px 0 rgba(0, 0, 0, 0.02);
@@ -62,9 +62,9 @@
   --border-highlight: rgba(255, 255, 255, 0.12);
   --text: #F8FAFC;
   --text-secondary: #CBD5E1;
-  --text-muted: #64748B;
-  --text-faint: #475569;
-  --accent: #F59E0B; /* Luminous Kesari saffron amber */
+  --text-muted: #E2E8F0;
+  --text-faint: #94A3B8;
+  --accent: #78350F;
   --accent-light: rgba(245, 158, 11, 0.12);
   --accent-glow: rgba(245, 158, 11, 0.2);
   --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
@@ -82,9 +82,9 @@
   --border-highlight: rgba(0, 0, 0, 0.12);
   --text: #362919;
   --text-secondary: #5C4A35;
-  --text-muted: #8C775D;
-  --text-faint: #A8957A;
-  --accent: #9A3412; /* Traditional gutka crimson rust */
+  --text-muted: #525252;
+  --text-faint: #404040;
+  --accent: #78350F;
   --accent-light: rgba(154, 52, 18, 0.09);
   --accent-glow: rgba(154, 52, 18, 0.15);
   --shadow-subtle: 0 1px 3px 0 rgba(54, 41, 25, 0.05);
@@ -340,3 +340,34 @@ html[data-focus-mode="on"] main {
     text-decoration: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------- */
+/* Feature: Prefers-reduced-motion (item 24)                              */
+/* Disables smooth scroll, animate-in, crossfade, and spin animations     */
+/* when the user has requested reduced motion.                            */
+/* ---------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-in,
+  .fade-in,
+  .slide-in-from-top-2,
+  .zoom-in-95 {
+    animation: none !important;
+  }
+  .page-crossfade-overlay {
+    transition: none !important;
+  }
+  .memorize-hidden {
+    transition: none !important;
+  }
+}
+

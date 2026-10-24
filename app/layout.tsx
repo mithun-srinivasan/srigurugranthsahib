@@ -49,9 +49,25 @@ const inter = Inter({
 });
 
 /** Global SEO metadata applied to every page unless overridden. */
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://srigurugranthsahib.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Sri Guru Granth Sahib Ji — Ang Reader",
-  description: "A radically minimalist, verse-by-verse digital reader for Sri Guru Granth Sahib Ji.",
+  description: "A verse-by-verse digital reader for Sri Guru Granth Sahib Ji — all 1,430 Angs plus daily Nitnem banis, genuine translations in four languages, commentary, and a daily Hukamnama from SGPC.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Sri Guru Granth Sahib Ji — Ang Reader",
+    description: "A verse-by-verse digital reader for Sri Guru Granth Sahib Ji — all 1,430 Angs plus daily Nitnem banis, genuine translations, commentary, and a daily Hukamnama from SGPC.",
+    url: "/",
+    siteName: "SGGS Reader",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Sri Guru Granth Sahib Ji — Ang Reader",
+    description: "A verse-by-verse digital reader for Sri Guru Granth Sahib Ji.",
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

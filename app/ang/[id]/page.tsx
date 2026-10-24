@@ -164,6 +164,36 @@ export default async function AngPage({ params }: PageProps) {
 
       {/* Focus Mode exit — always visible when focus mode is on */}
       <FocusModeExit />
+
+      {/* JSON-LD: Book / CreativeWork for the Ang */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Book",
+            "name": `Sri Guru Granth Sahib Ji — Ang ${angNumber}${ang.raagNameEn ? ` (${ang.raagNameEn})` : ""}`,
+            "author": {
+              "@type": "Organization",
+              "name": "Sri Guru Granth Sahib Ji",
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "SGPC",
+            },
+            "url": `${typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL ? process.env.NEXT_PUBLIC_SITE_URL : "https://srigurugranthsahib.vercel.app"}/ang/${angNumber}`,
+            "isPartOf": {
+              "@type": "Book",
+              "name": "Sri Guru Granth Sahib Ji",
+            },
+            "numberOfPages": 1430,
+            "pageStart": angNumber,
+            "pageEnd": angNumber,
+            "inLanguage": "pa",
+            "abstract": ang.lines.slice(0, 3).map((l) => l.translations?.en || l.gurmukhi).join(" "),
+          }),
+        }}
+      />
     </div>
   );
 }

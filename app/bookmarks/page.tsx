@@ -310,12 +310,12 @@ export default function BookmarksPage() {
             </div>
           </div>
           {backupStatus === "success" && (
-            <p className="mt-3 rounded-lg bg-green-600/20 px-3 py-2 text-[11px] font-medium text-green-400">
+            <p className="mt-3 rounded-lg bg-[var(--accent-light)] px-3 py-2 text-[11px] font-medium text-[var(--accent)]">
               Backup restored — reloading with your data…
             </p>
           )}
           {backupStatus === "error" && (
-            <p className="mt-3 rounded-lg bg-red-600/20 px-3 py-2 text-[11px] font-medium text-red-400">
+            <p className="mt-3 rounded-lg bg-[var(--accent-light)] px-3 py-2 text-[11px] font-medium text-[var(--text-muted)]">
               Invalid backup file. Please choose a file exported with “Back up all”.
             </p>
           )}
@@ -323,12 +323,12 @@ export default function BookmarksPage() {
 
         {/* Import success / error banners */}
         {importStatus === "success" && (
-          <div className="mb-4 rounded-lg bg-green-600/20 px-4 py-2 text-xs font-medium text-green-400">
+          <div className="mb-4 rounded-lg bg-[var(--accent-light)] px-4 py-2 text-xs font-medium text-[var(--accent)]">
             Bookmarks imported successfully!
           </div>
         )}
         {importStatus === "error" && (
-          <div className="mb-4 rounded-lg bg-red-600/20 px-4 py-2 text-xs font-medium text-red-400">
+          <div className="mb-4 rounded-lg bg-[var(--accent-light)] px-4 py-2 text-xs font-medium text-[var(--text-muted)]">
             Invalid file format. Please upload a valid JSON file.
           </div>
         )}

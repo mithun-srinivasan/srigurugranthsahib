@@ -12,6 +12,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
+    scope: "/",
+    lang: "en",
     name: "Sri Guru Granth Sahib Ji — Ang Reader",
     short_name: "SGGS Reader",
     description:
@@ -20,11 +23,12 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#090A0F",
     theme_color: "#F59E0B",
-    orientation: "portrait-primary",
     categories: ["education", "books", "religion"],
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

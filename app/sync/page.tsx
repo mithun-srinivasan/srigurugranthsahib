@@ -297,7 +297,7 @@ export default function SyncPage() {
 
       <main className="mx-auto max-w-3xl space-y-6 px-5 py-8 sm:px-8">
         {!supported && (
-          <p role="alert" className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+          <p role="alert" className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-light)] px-4 py-3 text-xs text-[var(--text-muted)]">
             This browser does not support direct device sync. Use “Back up all” on the bookmarks
             page to move a file instead.
           </p>
@@ -346,7 +346,7 @@ export default function SyncPage() {
           </p>
         )}
         {error && (
-          <p role="alert" className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+          <p role="alert" className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-light)] px-4 py-3 text-xs text-[var(--text-muted)]">
             {error}
           </p>
         )}
@@ -456,7 +456,7 @@ export default function SyncPage() {
                 </div>
               )}
               {restored !== null && (
-                <p role="status" className="mt-3 rounded-lg bg-green-600/20 px-3 py-2 text-[11px] font-medium text-green-400">
+                <p role="status" className="mt-3 rounded-lg bg-[var(--accent-light)] px-3 py-2 text-[11px] font-medium text-[var(--accent)]">
                   Restored {restored} data sections — reloading…
                 </p>
               )}

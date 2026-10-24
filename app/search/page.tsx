@@ -22,7 +22,7 @@
 
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, Search as SearchIcon, Loader2, X, WifiOff } from "lucide-react";
 import type { SearchResult } from "@/lib/types";
@@ -71,6 +71,9 @@ export default function SearchPage() {
   /** Recent successful searches, shown as landing-page shortcuts. */
   const [recent, setRecent] = useState<string[]>([]);
 
+  /** Request ID to guard against out-of-order responses (item 27). */
+  const requestIdRef = useRef(0);
+
   /** Hydrate offline stats + recents once on mount (SSR-safe). */
   useEffect(() => {
     try {
@@ -112,6 +115,7 @@ export default function SearchPage() {
   const doSearch = async (term: string) => {
     const resolved = resolveTerm(term);
     if (!resolved) return;
+    const requestId = ++requestIdRef.current;
     setQuery(term);
     setLoading(true);
     setSearched(true);
@@ -120,6 +124,7 @@ export default function SearchPage() {
     // Offline fast-path: skip the live call entirely when the browser
     // already knows it has no connection.
     const searchOffline = () => {
+      if (requestIdRef.current !== requestId) return;
       const hits = searchOfflineIndex(resolved, mode);
       setResults(hits);
       setOfflineMode(true);
@@ -138,6 +143,7 @@ export default function SearchPage() {
         setTimeout(() => reject(new Error("search timeout")), 15000)
       );
       const res = await Promise.race([runSearch(resolved, mode), timeout]);
+      if (requestIdRef.current !== requestId) return;
       setResults(res);
       saveRecentSearch(resolved);
       setRecent(readRecentSearches());
@@ -157,7 +163,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] transition-colors">
+    <div className="min-h-dvh bg-[var(--bg)] text-[var(--text)] transition-colors">
       {/* Sticky header with back link and search input */}
       <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
@@ -335,13 +341,16 @@ export default function SearchPage() {
               </p>
             ) : (
               <p className="text-xs font-semibold text-[var(--text-muted)]">
-                Found {results.length} verses
+                Found {results.length} verses{" "}
+                {results.length >= 40 && (
+                  <span className="text-[var(--text-faint)]">(showing first 40 results)</span>
+                )}
               </p>
             )}
 
             <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
-              {results.map((r, i) => (
-                <li key={`${r.verseId || "verse"}-${r.angNumber}-${i}`}>
+              {results.map((r) => (
+                <li key={`${r.verseId || "verse"}-${r.angNumber}`}>
                   <Link
                     href={`/ang/${r.angNumber}#${r.verseId}`}
                     className="block py-4 transition hover:bg-[var(--surface-hover)]"

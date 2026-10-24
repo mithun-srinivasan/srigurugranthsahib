@@ -184,9 +184,9 @@ export default function HomePage() {
             {/* Logo / Title */}
             <Link href="/" className="flex items-center gap-2">
               <span className="font-gurmukhi text-lg font-bold text-[var(--accent)]">ੴ</span>
-              <h1 className="text-sm font-bold tracking-tight text-[var(--text)]">
+              <h2 className="text-sm font-bold tracking-tight text-[var(--text)]">
                 Sri Guru Granth Sahib Ji
-              </h1>
+              </h2>
             </Link>
 
             <nav className="flex items-center gap-1">
@@ -377,6 +377,11 @@ export default function HomePage() {
                 </div>
                 {/* Filled progress bar */}
                 <div
+                  role="progressbar"
+                  aria-valuenow={targetAng}
+                  aria-valuemin={MIN_ANG}
+                  aria-valuemax={MAX_ANG}
+                  aria-label="Ang number selection progress"
                   className="absolute h-2.5 rounded-full bg-[var(--accent)] transition-all duration-75"
                   style={{ width: `${((targetAng - 1) / (MAX_ANG - 1)) * 100}%` }}
                 />
@@ -387,7 +392,7 @@ export default function HomePage() {
                   max={MAX_ANG}
                   value={targetAng}
                   onChange={(e) => setTargetAng(parseInt(e.target.value, 10))}
-                  className="relative z-10 h-2.5 w-full cursor-pointer opacity-0"
+                  className="relative z-10 h-2.5 w-full cursor-pointer opacity-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
                   aria-label="Ang number selection slider"
                 />
                 {/* Custom thumb indicator */}
