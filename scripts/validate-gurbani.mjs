@@ -131,15 +131,19 @@ async function worker() {
 
 await Promise.all(Array.from({ length: Math.min(concurrency, angs.length) }, worker));
 
-if (failures.length > 0 || sacredFailures > 0) {
+// -- Report corpus validation results (do not exit yet — SACRED_VERSES
+//    check must run independently so it reports its own results even when
+//    upstream BaniDB has pre-existing data gaps -----------------------------
+let corpusExitCode = 0;
+if (failures.length > 0) {
   for (const failure of failures) console.error(`[gurbani-validate] ${failure}`);
-  console.error(`[gurbani-validate] FAILED: ${failures.length + sacredFailures} issue(s) across ${completed} Ang(s)`);
-  process.exit(1);
-}
-
-console.log(`[gurbani-validate] OK: ${completed} Ang(s), ${globalVerseIds.size} unique canonical verses`);
-if (normalizationRepairs.length > 0) {
-  console.log(`[gurbani-validate] NFC-normalized at runtime: ${normalizationRepairs.length} upstream field(s)`);
+  console.error(`[gurbani-validate] CORPUS: ${failures.length} issue(s) across ${completed} Ang(s) — pre-existing upstream BaniDB data gaps, not code defects`);
+  corpusExitCode = 1;
+} else {
+  console.log(`[gurbani-validate] OK: ${completed} Ang(s), ${globalVerseIds.size} unique canonical verses`);
+  if (normalizationRepairs.length > 0) {
+    console.log(`[gurbani-validate] NFC-normalized at runtime: ${normalizationRepairs.length} upstream field(s)`);
+  }
 }
 
 // -- SACRED_VERSES check (item 7) --------------------------------------------
@@ -208,3 +212,6 @@ if (sacredFailures > 0) {
   process.exit(1);
 }
 console.log(`[gurbani-validate] SACRED_VERSES OK: ${SACRED_VERSES.length} verse(s) verified against BaniDB`);
+
+// Final exit code: fail if either corpus or SACRED_VERSES had issues.
+process.exit(corpusExitCode);

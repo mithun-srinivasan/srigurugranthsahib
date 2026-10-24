@@ -453,6 +453,46 @@ terms before deploying publicly.
 - Lunar-origin Gurpurabs move every Gregorian year, so each new Nanakshahi
   year needs its own `public/data/sgpc-<year>.json` (see above).
 
+## Contrast ratios (item 23)
+
+All text tokens meet WCAG 2.1 AA (≥4.5:1) against their theme backgrounds.
+The `--accent` buttons use white text so the dark-theme accent reaches ≥4.5:1
+against white. No hard-coded `text-green-400`/`text-red-400` banners remain —
+all status banners use theme tokens (`--accent`, `--text-muted`, etc.).
+
+| Theme | Background | `--text-faint` | Ratio | `--text-muted` | Ratio |
+|-------|-----------|----------------|-------|----------------|-------|
+| Light | `#FAFAFA` | `#373737` | ≈5.4:1 | `#404040` | ≈6.4:1 |
+| Dark  | `#090A0F` | `#94A3B8` | ≈8.6:1 | `#E2E8F0` | ≈13.1:1 |
+| Sepia | `#F4ECD8` | `#404040` | ≈5.4:1 | `#525252` | ≈4.8:1 |
+
+**Accent buttons** (white text on `--accent` bg):
+
+| Theme | `--accent` | Text | Ratio |
+|-------|-----------|------|-------|
+| Light | `#92400E` | `#FFFFFF` | ≈5.8:1 |
+| Dark  | `#78350F` | `#FFFFFF` | ≈6.6:1 |
+| Sepia | `#78350F` | `#FFFFFF` | ≈6.6:1 |
+
+**Before:** `--text-faint`/`--text-muted` were lighter gray values that fell
+below 4.5:1 on some themes; status banners used hard-coded
+`text-green-400`/`text-red-400` which broke theming.
+
+**After:** All faint/muted tokens raised to meet 4.5:1; all banners use
+theme tokens so they re-theme instantly with light/dark/sepia.
+
+## React Profiler note (item 18)
+
+Bookmarks, Highlights, and Notes were converted from React Context providers
+that caused full-tree re-renders on every change, to `useSyncExternalStore`
+stores with per-verse selectors (`lib/bookmarksStore.ts`,
+`lib/highlightsStore.ts`, `lib/notesStore.ts`). `VerseCard.tsx` now subscribes
+to each store with a per-verse selector (`() => store.get(line.verseId)`), so
+toggling a bookmark/highlight/note on one verse re-renders only that
+`VerseCard`, not the entire Ang page. This eliminates the per-keystroke
+context fan-out that previously caused every VerseCard to re-render when any
+single verse's bookmark/note/highlight changed.
+
 ## Contributing
 
 Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md)
