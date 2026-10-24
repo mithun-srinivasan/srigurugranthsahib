@@ -58,11 +58,11 @@ export const SACRED_VERSES: SacredVerse[] = [
     writer: "Guru Arjan Dev Ji",
   },
   {
-    title: "Bhairao — Thou Art My Father",
-    gurmukhi: "ਤੂ ਮੇਰਾ ਪਿਤਾ ਤੂਹੈ ਮੇਰਾ ਮਾਤਾ ॥ ਤੂ ਮੇਰਾ ਬੰਧਪੁ ਤੂ ਮੇਰਾ ਭ੍ਰਾਤਾ ॥",
-    transliteration: "too meraa pitaa toohai meraa maataa || too meraa bandhap too meraa bhraataa ||",
+    title: "Maajh — Thou Art My Father",
+    gurmukhi: "ਤੂੰ ਮੇਰਾ ਪਿਤਾ ਤੂੰਹੈ ਮੇਰਾ ਮਾਤਾ ॥ ਤੂੰ ਮੇਰਾ ਬੰਧਪੁ ਤੂੰ ਮੇਰਾ ਭ੍ਰਾਤਾ ॥",
+    transliteration: "too(n) meraa pitaa too(n)hai meraa maataa || too(n) meraa ba(n)dhap too(n) meraa bhraataa ||",
     translation: "You are my Father, and You are my Mother. You are my Relative, and You are my Brother.",
-    ang: 1144,
+    ang: 103,
     writer: "Guru Arjan Dev Ji",
   },
   {
@@ -75,9 +75,9 @@ export const SACRED_VERSES: SacredVerse[] = [
   },
   {
     title: "Japji Sahib — Those Who Serve",
-    gurmukhi: "ਜਿਨਿ ਸੇਵਿਆ ਤਿਨਿ ਪਾਇਆ ਮਾਨੁ ॥ ਨਾਨਕ ਰਾਮ ਨਾਮੁ ਗੁਣ ਗਾਨੁ ॥",
-    transliteration: "jin seviaa tin paaiaa maan || naanak raam naam gun gaan ||",
-    translation: "Those who serve obtain honour. O Nanak, sing the Glorious Praises of the Divine Name.",
+    gurmukhi: "ਜਿਨਿ ਸੇਵਿਆ ਤਿਨਿ ਪਾਇਆ ਮਾਨੁ ॥ ਨਾਨਕ ਗਾਵੀਐ ਗੁਣੀ ਨਿਧਾਨੁ ॥",
+    transliteration: "jin seviaa tin paaiaa maan || naanak gaaveeaai gunee nidhaan ||",
+    translation: "Those who serve obtain honour. O Nanak, sing the Glorious Praises of the Treasure of Excellence.",
     ang: 2,
     writer: "Guru Nanak Dev Ji",
   },
