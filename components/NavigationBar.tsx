@@ -67,6 +67,37 @@ export default function NavigationBar({ angNumber }: { angNumber: number }) {
 
   /** Whether the ReaderControls popover is open. */
   const [controlsOpen, setControlsOpen] = useState(false);
+  /** Ref to the settings toggle button — for focus return when closing. */
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
+  /** Ref to the popover container — for outside-click detection. */
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  /** Esc / outside-click close for the settings popover (item 25). */
+
+  /** Closes the popover and returns focus to the settings toggle. */
+  const closeControls = () => {
+    setControlsOpen(false);
+    settingsButtonRef.current?.focus();
+  };
+
+  useEffect(() => {
+    if (!controlsOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeControls();
+    };
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (settingsButtonRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setControlsOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClick);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [controlsOpen]);
 
   /** Visibility state for the scroll-aware auto-hide behaviour. */
   const [visible, setVisible] = useState(true);
@@ -348,6 +379,7 @@ export default function NavigationBar({ angNumber }: { angNumber: number }) {
 
           {/* Settings toggle — highlighted when the popover is open */}
           <button
+            ref={settingsButtonRef}
             onClick={() => setControlsOpen((o) => !o)}
             aria-label="Reader Settings"
             aria-expanded={controlsOpen}
@@ -375,7 +407,7 @@ export default function NavigationBar({ angNumber }: { angNumber: number }) {
 
       {/* Popover settings panel — rendered immediately below the header when open */}
       {controlsOpen && (
-        <div className="mx-auto max-w-3xl px-4 pb-3">
+        <div ref={popoverRef} className="mx-auto max-w-3xl px-4 pb-3">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-popover)] transition-all animate-in fade-in slide-in-from-top-2">
             <ReaderControls />
           </div>
