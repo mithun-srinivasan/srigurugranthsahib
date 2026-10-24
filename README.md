@@ -188,9 +188,9 @@ progress bar). Stored in `localStorage` under `sgs-reader-progress`.
 
 ### Learn Gurmukhi (`/learn`)
 
-Full akhar chart (seven traditional groups + ten lagan-matra vowel signs,
-every item with English transliteration) above a multiple-choice quiz with
-score and streak tracking.
+Full akhar chart (39 akhars in seven traditional groups plus ten
+lagan-matra vowel signs, every item with English transliteration) above a
+multiple-choice quiz with score and streak tracking.
 
 ### Home page extras
 
@@ -215,7 +215,8 @@ score and streak tracking.
 ## Technology
 
 - Next.js 16.3.5 (App Router, Turbopack) + React 19 + TypeScript (strict).
-- Tailwind CSS v4, Lucide icons, Vercel Analytics + Speed Insights.
+- Tailwind CSS v4, Lucide icons, Vercel Analytics + Speed Insights (production-only,
+  privacy-friendly telemetry — no personal data, no cookies).
 - BaniDB v2 API (scripture, translations, teekas, pad-arth, banis).
 - SGPC website scrape (daily Hukamnama image only).
 - ESLint (`eslint-config-next`, zero-error policy) + Playwright (Chromium).

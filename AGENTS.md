@@ -141,7 +141,7 @@ it*. Follow all ten rules on every change.
   translate classes, `main h2` month title. Renaming them breaks specs —
   update the specs in the same commit.
 - Always run before pushing: `npm run typecheck`, `npm run lint`,
-  `npm run validate:sgpc`. Run `npm run test` when touching UI/data flows.
+  `npm run validate:sgpc`, `npm run validate:gurbani`. Run `npm run test` when touching UI/data flows.
 
 ## 10. CI & git rules
 

@@ -1,10 +1,12 @@
 # .github/workflows/ci.yml
 # ---------------------------------------------------------------------------
-# Continuous integration: typecheck + lint + SGPC data validation + Playwright.
+# Continuous integration: typecheck + lint + SGPC data validation + Gurbani validation + Playwright.
 #
 # - Triggers on pushes and pull requests to any branch.
 # - `validate:sgpc` guards the no-code-change calendar release workflow: a
 #   malformed `public/data/sgpc-<year>.json` fails the run before merge.
+# - `validate:gurbani` guards scripture data integrity: missing Punjabi
+#   translations from BaniDB fail the run before merge.
 # - The Playwright suite serves `npm run dev` itself (see playwright.config.ts)
 #   and needs live BaniDB/SGPC access; specs are written with fallbacks so one
 #   slow upstream response retries once instead of failing the build.
@@ -40,6 +42,9 @@ jobs:
 
       - name: Validate SGPC calendars
         run: npm run validate:sgpc
+
+      - name: Validate Gurbani data
+        run: npm run validate:gurbani
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
