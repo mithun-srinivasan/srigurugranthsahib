@@ -389,9 +389,9 @@ export default function BookmarksPage() {
                         <button
                           onClick={() => removeTag(b.verseId, t)}
                           aria-label={`Remove tag ${t}`}
-                          className="hover:text-[var(--text)]"
+                          className="flex min-h-[24px] min-w-[24px] items-center justify-center hover:text-[var(--text)]"
                         >
-                          <X size={10} />
+                          <X size={12} />
                         </button>
                       </span>
                     ))}

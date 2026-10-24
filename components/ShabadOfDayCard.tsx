@@ -16,7 +16,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import type { DailyShabad } from "@/lib/types";
-import { getDailyShabad } from "@/app/actions";
 import BorderBeam from "@/components/ui/BorderBeam";
 import { dayKey } from "./ProgressProvider";
 
@@ -74,7 +73,11 @@ export default function ShabadOfDayCard({
     const timeout = new Promise<null>((_, reject) =>
       setTimeout(() => reject(new Error("shabad timeout")), 12000)
     );
-    Promise.race([getDailyShabad(), timeout])
+    const fetchShabad = fetch("/shabad-of-day").then((res) => {
+      if (!res.ok) throw new Error(`Shabad HTTP ${res.status}`);
+      return res.json() as Promise<DailyShabad>;
+    });
+    Promise.race([fetchShabad, timeout])
       .then((s) => {
         if (cancelled) return;
         if (s) {

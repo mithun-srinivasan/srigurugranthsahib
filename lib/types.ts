@@ -293,6 +293,9 @@ export interface ReaderPrefs {
   // -- transliteration script (feature 24) -----------------------------------
   /** Which transliteration script to display (English, Hindi, Urdu, IPA). */
   translitStyle: TranslitStyle;
+  // -- single-key shortcuts (item 25) ----------------------------------------
+  /** When false, single-letter shortcuts (h, b, s, f) are ignored. `?` help always works. */
+  isShortcutsEnabled: boolean;
 }
 
 /** Lower bound of valid Ang numbers (inclusive) — re-exported from lib/ang.ts. */

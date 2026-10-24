@@ -131,9 +131,9 @@ async function worker() {
 
 await Promise.all(Array.from({ length: Math.min(concurrency, angs.length) }, worker));
 
-if (failures.length > 0) {
+if (failures.length > 0 || sacredFailures > 0) {
   for (const failure of failures) console.error(`[gurbani-validate] ${failure}`);
-  console.error(`[gurbani-validate] FAILED: ${failures.length} issue(s) across ${completed} Ang(s)`);
+  console.error(`[gurbani-validate] FAILED: ${failures.length + sacredFailures} issue(s) across ${completed} Ang(s)`);
   process.exit(1);
 }
 
@@ -141,3 +141,70 @@ console.log(`[gurbani-validate] OK: ${completed} Ang(s), ${globalVerseIds.size} 
 if (normalizationRepairs.length > 0) {
   console.log(`[gurbani-validate] NFC-normalized at runtime: ${normalizationRepairs.length} upstream field(s)`);
 }
+
+// -- SACRED_VERSES check (item 7) --------------------------------------------
+// Verify every hard-coded SacredVerse in lib/homeConstants.ts against BaniDB.
+// Never edits sacred text — any mismatch is reported as a failure for review.
+const SACRED_VERSES = [
+  { title: "Mool Mantar — Opening Scripture", ang: 1,
+    gurmukhi: "ੴ ਸਤਿ ਨਾਮੁ ਕਰਤਾ ਪੁਰਖੁ ਨਿਰਭਉ ਨਿਰਵੈਰੁ ਅਕਾਲ ਮੂਰਤਿ ਅਜੂਨੀ ਸੈਭੰ ਗੁਰ ਪ੍ਰਸਾਦਿ ॥",
+    transliteration: "ikOankaar sat naam karataa purakh nirabhau niravair akaal moorat ajoonee saibha(n) gur prasaadh ||",
+    translation: "One Universal Creator God. Truth Is The Name. Creative Being Personified. No Fear. No Hatred. Image Of The Undying, Beyond Birth, Self-Existent. By Guru's Grace." },
+  { title: "Japji Sahib — Sacred Slok", ang: 8,
+    gurmukhi: "ਪਵਣੁ ਗੁਰੂ ਪਾਣੀ ਪਿਤਾ ਮਾਤਾ ਧਰਤਿ ਮਹਤੁ ॥ ਦਿਵਸੁ ਰਾਤਿ ਦੁਇ ਦਾਈ ਦਾਇਆ ਖੇਲੈ ਸਗਲ ਜਗਤੁ ॥",
+    transliteration: "pavan guroo paanee pitaa maataa dharat mahat || dhivas raat dhue dhaaee dhaaiaa khelai sagal jagat ||",
+    translation: "Air is the Guru, Water is the Father, and Earth is the Great Mother of all. Day and night are the two nurses, in whose lap the whole world plays." },
+  { title: "Sukhmani Sahib — Sacred Salutation", ang: 262,
+    gurmukhi: "ਆਦਿ ਗੁਰਏ ਨਮਹ ॥ ਜੁਗਾਦਿ ਗੁਰਏ ਨਮਹ ॥ ਸਤਿਗੁਰਏ ਨਮਹ ॥ ਸ੍ਰੀ ਗੁਰਦੇਵਏ ਨਮਹ ॥",
+    transliteration: "aad gur e namah || jugaad gur e namah || satgur e namah || sree gurdev e namah ||",
+    translation: "I bow to the Primal Guru. I bow to the Guru of the Ages. I bow to the True Guru. I bow to the Great Divine Guru." },
+  { title: "Bhairao — Thou Art My Father", ang: 1144,
+    gurmukhi: "ਤੂ ਮੇਰਾ ਪਿਤਾ ਤੂਹੈ ਮੇਰਾ ਮਾਤਾ ॥ ਤੂ ਮੇਰਾ ਬੰਧਪੁ ਤੂ ਮੇਰਾ ਭ੍ਰਾਤਾ ॥",
+    transliteration: "too meraa pitaa toohai meraa maataa || too meraa bandhap too meraa bhraataa ||",
+    translation: "You are my Father, and You are my Mother. You are my Relative, and You are my Brother." },
+  { title: "Anand Sahib — Eternal Bliss", ang: 917,
+    gurmukhi: "ਅਨੰਦੁ ਭਇਆ ਮੇਰੀ ਮਾਏ ਸਤਿਗੁਰੂ ਮੈ ਪਾਇਆ ॥",
+    transliteration: "anand bhaiaa meree maae satguroo mai paaiaa ||",
+    translation: "I am in ecstasy, O my mother, for I have found my True Guru." },
+  { title: "Japji Sahib — Those Who Serve", ang: 2,
+    gurmukhi: "ਜਿਨਿ ਸੇਵਿਆ ਤਿਨਿ ਪਾਇਆ ਮਾਨੁ ॥ ਨਾਨਕ ਰਾਮ ਨਾਮੁ ਗੁਣ ਗਾਨੁ ॥",
+    transliteration: "jin seviaa tin paaiaa maan || naanak raam naam gun gaan ||",
+    translation: "Those who serve obtain honour. O Nanak, sing the Glorious Praises of the Divine Name." },
+];
+
+let sacredFailures = 0;
+for (const verse of SACRED_VERSES) {
+  try {
+    const res = await fetch(`https://api.banidb.com/v2/angs/${verse.ang}`, {
+      signal: AbortSignal.timeout(30_000),
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      console.error(`[gurbani-validate] SACRED_VERSES "${verse.title}" (Ang ${verse.ang}): HTTP ${res.status}`);
+      sacredFailures++;
+      continue;
+    }
+    const data = await res.json();
+    const rows = data?.page ?? [];
+    const matched = rows.find((r) => r?.verse?.unicode?.trim() === verse.gurmukhi.trim());
+    if (!matched) {
+      console.error(`[gurbani-validate] SACRED_VERSES "${verse.title}" (Ang ${verse.ang}): Gurmukhi verse not found in BaniDB`);
+      sacredFailures++;
+    } else {
+      const dbGurmukhi = matched.verse?.unicode?.trim() ?? "";
+      if (dbGurmukhi !== verse.gurmukhi.trim()) {
+        console.error(`[gurbani-validate] SACRED_VERSES "${verse.title}" (Ang ${verse.ang}): Gurmukhi mismatch`);
+        sacredFailures++;
+      }
+    }
+  } catch (err) {
+    console.error(`[gurbani-validate] SACRED_VERSES "${verse.title}" (Ang ${verse.ang}): Fetch failed — ${err.message}`);
+    sacredFailures++;
+  }
+}
+
+if (sacredFailures > 0) {
+  console.error(`[gurbani-validate] FAILED: ${sacredFailures} SACRED_VERSES issue(s)`);
+  process.exit(1);
+}
+console.log(`[gurbani-validate] SACRED_VERSES OK: ${SACRED_VERSES.length} verse(s) verified against BaniDB`);

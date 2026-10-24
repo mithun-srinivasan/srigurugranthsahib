@@ -46,7 +46,6 @@ import {
   VolumeX,
 } from "lucide-react";
 import type { HukamnamaInfo } from "@/lib/types";
-import { getTodaysHukamnama } from "@/app/actions";
 import { maybeNotifyHukamnama } from "@/lib/notifications";
 import HukamnamaNotifyButton from "@/components/HukamnamaNotifyButton";
 import BorderBeam from "@/components/ui/BorderBeam";
@@ -323,13 +322,17 @@ export default function HukamnamaCard({
     }
 
     let cancelled = false;
-    // Bounded fetch: on slow mobile data the server action's own retries
+    // Bounded fetch: on slow mobile data the route handler's own retries
     // would otherwise hold the skeleton for ~a minute. A timeout here drops
     // to the saved copy (or the SGPC-link fallback) within seconds.
     const timeout = new Promise<null>((_, reject) =>
       setTimeout(() => reject(new Error("hukamnama timeout")), HUKAM_FETCH_TIMEOUT_MS)
     );
-    Promise.race([getTodaysHukamnama(), timeout])
+    const fetchHukamnama = fetch("/hukamnama").then((res) => {
+      if (!res.ok) throw new Error(`Hukamnama HTTP ${res.status}`);
+      return res.json() as Promise<HukamnamaInfo>;
+    });
+    Promise.race([fetchHukamnama, timeout])
       .then((h) => {
         if (cancelled) return;
         if (h && h.lines.length > 0) {

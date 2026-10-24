@@ -237,7 +237,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Day grid */}
-        <div className="mt-4 grid grid-cols-7 gap-1">
+        <div role="grid" aria-label="Calendar month grid" className="mt-4 grid grid-cols-7 gap-1">
           {cells.map(({ date, inMonth }, i) => {
             const m = date.getMonth() + 1;
             const d = date.getDate();
@@ -247,7 +247,13 @@ export default function CalendarPage() {
               `${date.getFullYear()}-${date.getMonth()}-${d}` === todayKey && inMonth;
             return (
               <div
+                role="gridcell"
                 key={i}
+                aria-label={
+                  inMonth
+                    ? date.toLocaleDateString("en-GB", { weekday: "long", month: "long", day: "numeric" })
+                    : undefined
+                }
                 className={`min-h-[52px] rounded-lg border p-1 text-center transition ${
                   !inMonth
                     ? "border-transparent text-[var(--text-faint)] opacity-40"
@@ -274,7 +280,7 @@ export default function CalendarPage() {
                       href={`/ang/${g.ang}`}
                       title={`${g.name} — read Ang ${g.ang}`}
                       aria-label={`${g.name} — read Ang ${g.ang}`}
-                      className="block h-2 w-2 rounded-full bg-[var(--accent)] transition hover:scale-125"
+                      className="block min-h-[24px] min-w-[24px] h-6 w-6 rounded-full flex items-center justify-center bg-[var(--accent)] transition hover:scale-125"
                     />
                   ))}
                 </div>

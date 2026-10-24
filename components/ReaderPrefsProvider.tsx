@@ -67,6 +67,7 @@ const DEFAULT_PREFS: ReaderPrefs = {
   isTapToTranslit: false,
   translitStyle: "en",
   isAutoAdvance: false,
+  isShortcutsEnabled: true,
   showCommentary: false,
 };
 
@@ -97,6 +98,7 @@ interface ReaderPrefsContextValue extends ReaderPrefs {
   toggleVisraam: () => void;
   toggleTapToTranslit: () => void;
   toggleAutoAdvance: () => void;
+  toggleShortcuts: () => void;
   setTranslitStyle: (style: TranslitStyle) => void;
   /** Hydration state. */
   hydrated: boolean;
@@ -197,6 +199,7 @@ function sanitizePrefs(raw: unknown): ReaderPrefs {
     "showVisraam",
     "isTapToTranslit",
     "isAutoAdvance",
+    "isShortcutsEnabled",
   ];
   for (const key of boolKeys) {
     if (typeof candidate[key] === "boolean") {
@@ -287,6 +290,7 @@ function validatePrefs(raw: unknown): { ok: true; data: ReaderPrefs } | { ok: fa
     "showVisraam",
     "isTapToTranslit",
     "isAutoAdvance",
+    "isShortcutsEnabled",
   ];
   for (const key of boolKeys) {
     const boolResult = validateOptional(obj[key], (v) =>
@@ -425,6 +429,7 @@ export function ReaderPrefsProvider({ children }: { children: ReactNode }) {
         setPrefs((p) => ({ ...p, commentarySource })),
       toggleTapToTranslit: toggleBool("isTapToTranslit"),
       toggleAutoAdvance: toggleBool("isAutoAdvance"),
+      toggleShortcuts: toggleBool("isShortcutsEnabled"),
       setTranslitStyle: (translitStyle: TranslitStyle) =>
         setPrefs((p) => ({ ...p, translitStyle })),
       hydrated,
