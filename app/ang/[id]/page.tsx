@@ -42,6 +42,7 @@ import BottomNav from "./BottomNav";
 import AngStartSentinel from "./AngStartSentinel";
 import AngUnavailable from "./AngUnavailable";
 import ClientAngReader from "./ClientAngReader";
+import FocusModeExit from "@/components/FocusModeExit";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -160,6 +161,9 @@ export default async function AngPage({ params }: PageProps) {
 
       {/* Fixed bottom navigation bar */}
       <BottomNav angNumber={angNumber} maxAng={MAX_ANG} minAng={MIN_ANG} />
+
+      {/* Focus Mode exit — always visible when focus mode is on */}
+      <FocusModeExit />
     </div>
   );
 }

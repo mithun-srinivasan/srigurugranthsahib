@@ -1,9 +1,13 @@
 /**
  * lib/shareCard.ts
  * ---------------------------------------------------------------------------
- * Client-side helper that renders a verse onto a 1080×1350 canvas and triggers
- * a PNG download.  Extracted from VerseCard.tsx to reduce component size and
- * improve testability of the canvas rendering logic.
+ * Client-side helper that renders a verse onto a 1080×1350 canvas and either
+ * shares it via the Web Share API (`navigator.share({files})`) or falls back
+ * to a PNG download.
+ *
+ * Before drawing, the Gurmukhi (Noto Sans Gurmukhi) and UI (Inter) web fonts
+ * are loaded via `document.fonts.load()` so the canvas renders with the real
+ * typefaces instead of a fallback.
  *
  * Long verses always fit: every block is word-wrapped, the layout tries roomy
  * font sizes first and shrinks step-wise until the whole stack fits above the
@@ -13,8 +17,9 @@
 
 "use client";
 
-/** Fallback font stack used when drawing the share card onto a canvas. */
-const SHARE_FONT_STACK = `"Noto Sans Gurmukhi", "Nirmala UI", "Raavi", sans-serif`;
+/** Real next/font family names as registered via `variable:` in layout.tsx. */
+const FONT_GURMUKHI = "Noto Sans Gurmukhi";
+const FONT_SANS = "Inter";
 
 interface ShareCardOptions {
   gurmukhi: string;
@@ -68,11 +73,34 @@ function fitLines(
   return kept;
 }
 
+/** Loads the Gurmukhi and Inter web fonts before canvas drawing. Returns when
+ *  both are ready (or fails silently so the canvas still renders with system
+ *  fallback fonts). */
+async function loadShareFonts(): Promise<void> {
+  const promises: Promise<unknown>[] = [];
+  if (document.fonts) {
+    // Noto Sans Gurmukhi — loaded via next/font in layout.tsx with variable --font-gurmukhi.
+    // Inter — loaded via next/font in layout.tsx with variable --font-sans.
+    // We can't reference CSS variables from canvas, so register FontFace objects
+    // with the actual family names and let the browser match them to the
+    // already-loaded next/font resources.
+    try {
+      promises.push(
+        document.fonts.load(`16px "${FONT_GURMUKHI}"`),
+        document.fonts.load(`16px "${FONT_SANS}"`),
+      );
+    } catch {
+      // document.fonts.load may not exist in older browsers — skip.
+    }
+  }
+  await Promise.allSettled(promises);
+}
+
 /**
- * Renders a verse onto a 1080×1350 (4:5 portrait) canvas and triggers a
- * PNG download.
+ * Renders a verse onto a 1080×1350 (4:5 portrait) canvas and shares it via
+ * the Web Share API when available, falling back to a PNG download.
  */
-export function downloadShareCard({
+export async function downloadShareCard({
   gurmukhi,
   transliteration,
   translation,
@@ -80,7 +108,10 @@ export function downloadShareCard({
   lineId,
   baniToken,
   baniName,
-}: ShareCardOptions): void {
+}: ShareCardOptions): Promise<void> {
+  // Ensure web fonts are available before measuring/drawing text.
+  await loadShareFonts();
+
   const W = 1080;
   const H = 1350;
   const PAD_X = 110;
@@ -102,9 +133,9 @@ export function downloadShareCard({
     { g: 42, tr: 25, tl: 23 },
     { g: 36, tr: 22, tl: 20 },
   ];
-  const gFont = (s: number) => `600 ${s}px ${SHARE_FONT_STACK}`;
-  const trFont = (s: number) => `italic 400 ${s}px Inter, sans-serif`;
-  const tlFont = (s: number) => `400 ${s}px Inter, sans-serif`;
+  const gFont = (s: number) => `600 ${s}px "${FONT_GURMUKHI}", "Nirmala UI", "Raavi", sans-serif`;
+  const trFont = (s: number) => `italic 400 ${s}px "${FONT_SANS}", sans-serif`;
+  const tlFont = (s: number) => `400 ${s}px "${FONT_SANS}", sans-serif`;
 
   const CONTENT_TOP = 400;
   const CONTENT_BOTTOM = H - 200;
@@ -179,7 +210,7 @@ export function downloadShareCard({
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#F59E0B";
-  ctx.font = `600 92px ${SHARE_FONT_STACK}`;
+  ctx.font = `600 92px "${FONT_GURMUKHI}", "Nirmala UI", "Raavi", sans-serif`;
   ctx.fillText("\u0A74", W / 2, 208);
   ctx.fillRect(W / 2 - 80, 258, 160, 4);
 
@@ -221,14 +252,30 @@ export function downloadShareCard({
   ctx.fillStyle = "#F59E0B";
   ctx.fillRect(W / 2 - 60, H - 168, 120, 3);
   ctx.fillStyle = "#64748B";
-  ctx.font = `400 26px Inter, sans-serif`;
+  ctx.font = `400 26px "${FONT_SANS}", sans-serif`;
   ctx.fillText(
     baniName ?? `Sri Guru Granth Sahib Ji \u00B7 Ang ${angNumber}`,
     W / 2,
     H - 108,
   );
 
-  // Download.
+  // Share via Web Share API when available, else download.
+  try {
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/png");
+    });
+    if (blob && navigator.share) {
+      const file = new File([blob], `sggs-${baniToken ?? "ang"}-${angNumber}-verse-${lineId}.png`, {
+        type: "image/png",
+      });
+      await navigator.share({ files: [file] });
+      return;
+    }
+  } catch {
+    // Fall through to download.
+  }
+
+  // Download fallback.
   const url = canvas.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = url;

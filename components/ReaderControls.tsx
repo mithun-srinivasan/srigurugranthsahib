@@ -280,8 +280,8 @@ export default function ReaderControls() {
           />
           <ToggleRow
             label="Text &amp; Commentary"
-            pressed={prefs.showKanji}
-            onToggle={prefs.toggleKanji}
+            pressed={prefs.showCommentary}
+            onToggle={prefs.toggleCommentary}
             hint="Show the genuine verse commentary (teeka) under each verse"
           />
           <ToggleRow
@@ -305,7 +305,7 @@ export default function ReaderControls() {
         </div>
 
         {/* Commentary language selector (feature 21) */}
-        {prefs.showKanji && (
+        {prefs.showCommentary && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-[var(--text-muted)]">Commentary Language</span>
             <div className="flex items-center rounded-lg border border-[var(--border)] p-0.5">

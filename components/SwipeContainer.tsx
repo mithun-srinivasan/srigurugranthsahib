@@ -43,7 +43,7 @@ export default function SwipeContainer({
   );
 
   return (
-    <div {...swipeHandlers} className="touch-pan-y">
+    <div {...swipeHandlers} className="touch-pan-y touch-pinch-zoom">
       {children}
     </div>
   );

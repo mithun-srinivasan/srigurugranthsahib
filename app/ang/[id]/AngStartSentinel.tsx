@@ -21,6 +21,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useReaderPrefs } from "@/components/ReaderPrefsProvider";
 
 export default function AngStartSentinel({
   angNumber,
@@ -30,6 +31,7 @@ export default function AngStartSentinel({
   minAng: number;
 }) {
   const router = useRouter();
+  const { isAutoAdvance } = useReaderPrefs();
 
   /** Previous scroll Y — updated continuously during the scroll listener. */
   const previousScrollY = useRef(0);
@@ -44,7 +46,8 @@ export default function AngStartSentinel({
   const isFirstAng = angNumber <= minAng;
 
   useEffect(() => {
-    if (isFirstAng || triggered.current) return;
+    // Auto-back is opt-in via the isAutoAdvance pref.
+    if (!isAutoAdvance || isFirstAng || triggered.current) return;
 
     // Initialise the baseline scroll position so the first frame is ignored.
     previousScrollY.current = window.scrollY;
@@ -73,7 +76,7 @@ export default function AngStartSentinel({
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [angNumber, isFirstAng, router]);
+  }, [isAutoAdvance, angNumber, isFirstAng, router]);
 
   // Nothing to render — all logic is side-effect driven.
   return null;

@@ -60,13 +60,14 @@ const DEFAULT_PREFS: ReaderPrefs = {
   isOledTheme: false,
   isMemorizationMode: false,
   isParallelTranslations: false,
-  showKanji: false,
   commentaryLang: "pu",
   commentarySource: "fareedkot",
   showWordMeanings: false,
   showVisraam: false,
   isTapToTranslit: false,
   translitStyle: "en",
+  isAutoAdvance: false,
+  showCommentary: false,
 };
 
 /**
@@ -89,12 +90,13 @@ interface ReaderPrefsContextValue extends ReaderPrefs {
   setAccentHex: (hex: string | null) => void;
   toggleMemorizationMode: () => void;
   toggleParallelTranslations: () => void;
-  toggleKanji: () => void;
+  toggleCommentary: () => void;
   setCommentaryLang: (lang: CommentaryLang) => void;
   setCommentarySource: (source: CommentarySource) => void;
   toggleWordMeanings: () => void;
   toggleVisraam: () => void;
   toggleTapToTranslit: () => void;
+  toggleAutoAdvance: () => void;
   setTranslitStyle: (style: TranslitStyle) => void;
   /** Hydration state. */
   hydrated: boolean;
@@ -135,6 +137,16 @@ function sanitizePrefs(raw: unknown): ReaderPrefs {
 
   const prefs: ReaderPrefs = { ...DEFAULT_PREFS };
   const candidate = raw as Partial<ReaderPrefs>;
+
+  // One-time migration: the `showKanji` pref was renamed to `showCommentary`.
+  // If the stored data still carries the old key, adopt its value and drop it.
+  const oldKanji = (candidate as Record<string, unknown>).showKanji;
+  if (
+    typeof oldKanji === "boolean" &&
+    typeof candidate.showCommentary !== "boolean"
+  ) {
+    candidate.showCommentary = oldKanji;
+  }
 
   if (typeof candidate.theme === "string" && (VALID_THEMES as string[]).includes(candidate.theme)) {
     prefs.theme = candidate.theme;
@@ -180,10 +192,11 @@ function sanitizePrefs(raw: unknown): ReaderPrefs {
     "isOledTheme",
     "isMemorizationMode",
     "isParallelTranslations",
-    "showKanji",
+    "showCommentary",
     "showWordMeanings",
     "showVisraam",
     "isTapToTranslit",
+    "isAutoAdvance",
   ];
   for (const key of boolKeys) {
     if (typeof candidate[key] === "boolean") {
@@ -269,10 +282,11 @@ function validatePrefs(raw: unknown): { ok: true; data: ReaderPrefs } | { ok: fa
     "isOledTheme",
     "isMemorizationMode",
     "isParallelTranslations",
-    "showKanji",
+    "showCommentary",
     "showWordMeanings",
     "showVisraam",
     "isTapToTranslit",
+    "isAutoAdvance",
   ];
   for (const key of boolKeys) {
     const boolResult = validateOptional(obj[key], (v) =>
@@ -402,7 +416,7 @@ export function ReaderPrefsProvider({ children }: { children: ReactNode }) {
       setAccentHex: (accentHex: string | null) => setPrefs((p) => ({ ...p, accentHex })),
       toggleMemorizationMode: toggleBool("isMemorizationMode"),
       toggleParallelTranslations: toggleBool("isParallelTranslations"),
-      toggleKanji: toggleBool("showKanji"),
+      toggleCommentary: toggleBool("showCommentary"),
       setCommentaryLang: (commentaryLang: CommentaryLang) =>
         setPrefs((p) => ({ ...p, commentaryLang })),
       toggleWordMeanings: toggleBool("showWordMeanings"),
@@ -410,6 +424,7 @@ export function ReaderPrefsProvider({ children }: { children: ReactNode }) {
       setCommentarySource: (commentarySource: CommentarySource) =>
         setPrefs((p) => ({ ...p, commentarySource })),
       toggleTapToTranslit: toggleBool("isTapToTranslit"),
+      toggleAutoAdvance: toggleBool("isAutoAdvance"),
       setTranslitStyle: (translitStyle: TranslitStyle) =>
         setPrefs((p) => ({ ...p, translitStyle })),
       hydrated,

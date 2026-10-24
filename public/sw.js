@@ -22,17 +22,54 @@
  * The version string in `CACHE` busts the cache whenever the build changes.
  */
 
-const CACHE = "sggs-reader-v5";
+const CACHE = "sggs-reader-v6";
 const SHELL_CACHE = `${CACHE}-shell`;
 
 /** Entry documents precached on install for instant offline opens. */
 const SHELL_URLS = ["/", "/search", "/bookmarks", "/ang/1", "/learn", "/nitnem", "/calendar"];
 
+/** Maximum number of entries in the runtime HTML cache. Oldest entries are
+ *  evicted first (LRU) when the cap is exceeded. */
+const RUNTIME_MAX = 100;
+
+/** Tracks insertion order for LRU eviction (URL → timestamp). Updated on
+ *  every `cache.put` to this cache. Keys are evicted from `RUNTIME_MAX` down. */
+const runtimeOrder = [];
+
+/** Evicts the oldest cached entry when the runtime cache exceeds its cap.
+ *  Keeps the cache bounded so long sessions don't grow unboundedly. */
+function enforceRuntimeLimit(cache) {
+  return cache.keys().then((keys) => {
+    while (keys.length > RUNTIME_MAX) {
+      const oldest = keys.shift();
+      if (oldest) {
+        cache.delete(oldest);
+        const idx = runtimeOrder.indexOf(oldest);
+        if (idx >= 0) runtimeOrder.splice(idx, 1);
+      }
+    }
+  });
+}
+
+/** Records a cache insertion for LRU tracking. */
+function trackCacheInsertion(url) {
+  runtimeOrder.push(url);
+  while (runtimeOrder.length > RUNTIME_MAX) {
+    runtimeOrder.shift();
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL_CACHE)
-      .then((cache) => cache.addAll(SHELL_URLS))
+      .then((cache) => {
+        // Add each shell URL individually so one failed URL doesn't abort
+        // precaching of all the others.
+        return Promise.allSettled(
+          SHELL_URLS.map((url) => cache.add(url).catch(() => {})),
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -58,11 +95,19 @@ self.addEventListener("activate", (event) => {
  * Offline with no cached copy → falls back to the cached home page so the
  * app still opens instead of showing a browser error.
  */
+function cachePutWithLimit(cache, request, response) {
+  const copy = response.clone();
+  return cache.put(request, copy).then(() => {
+    trackCacheInsertion(request.url);
+    return enforceRuntimeLimit(cache);
+  });
+}
+
 async function networkFirstWithCache(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
     const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
+    if (response.ok) await cachePutWithLimit(cache, request, response);
     return response;
   } catch {
     return (
@@ -93,7 +138,7 @@ self.addEventListener("fetch", (event) => {
           cached ||
           fetch(request).then((response) => {
             const copy = response.clone();
-            caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
+            caches.open(SHELL_CACHE).then((cache) => cachePutWithLimit(cache, request, copy));
             return response;
           })
       )
@@ -108,7 +153,7 @@ self.addEventListener("fetch", (event) => {
         const network = fetch(request)
           .then((response) => {
             const copy = response.clone();
-            caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
+            caches.open(SHELL_CACHE).then((cache) => cachePutWithLimit(cache, request, copy));
             return response;
           })
           .catch(() => cached);
@@ -127,7 +172,7 @@ self.addEventListener("fetch", (event) => {
           .then((response) => {
             if (response.ok) {
               const copy = response.clone();
-              caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
+              caches.open(SHELL_CACHE).then((cache) => cachePutWithLimit(cache, request, copy));
             }
             return response;
           })

@@ -46,6 +46,11 @@ export function useSwipeNavigation(
 
   /** Records the gesture's origin when a finger first touches the element. */
   const onTouchStart = (e: TouchEvent) => {
+    // Ignore multi-touch gestures (pinch, two-finger scroll, etc.).
+    if (e.touches.length > 1) return;
+    // Never hijack touches on form elements — the user may be typing.
+    const target = e.target;
+    if (target instanceof HTMLElement && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
     const t = e.touches[0];
     startX.current = t.clientX;
     startY.current = t.clientY;
@@ -63,6 +68,9 @@ export function useSwipeNavigation(
 
   /** Decides, once the finger lifts, whether this movement qualifies as a swipe. */
   const onTouchEnd = () => {
+    // Never navigate when text is selected (user may be selecting to copy/share).
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) return;
     const elapsed = Date.now() - startTime.current;
     const absX = Math.abs(deltaX.current);
     const absY = Math.abs(deltaY.current);

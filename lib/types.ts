@@ -275,7 +275,7 @@ export interface ReaderPrefs {
   isParallelTranslations: boolean;
   // -- Text & commentary / teeka (feature 21) --------------------------------
   /** Displays the verse commentary (teeka) block under each verse. */
-  showKanji: boolean;
+  showCommentary: boolean;
   /** Language of the commentary block (`en` → SGPC rendition, `pu` → teeka). */
   commentaryLang: CommentaryLang;
   /** Displays the word-by-word meanings (pad-arth) block under each verse. */
@@ -287,6 +287,9 @@ export interface ReaderPrefs {
   // -- tap-to-transliterate words (feature 19) --------------------------------
   /** Tap a Gurmukhi word to show its transliteration in a small tooltip. */
   isTapToTranslit: boolean;
+  // -- auto-advance / auto-back (feature 17) ----------------------------------
+  /** When true, reaching the end of an Ang auto-advances; scrolling to the top auto-backs. */
+  isAutoAdvance: boolean;
   // -- transliteration script (feature 24) -----------------------------------
   /** Which transliteration script to display (English, Hindi, Urdu, IPA). */
   translitStyle: TranslitStyle;

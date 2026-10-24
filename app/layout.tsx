@@ -71,6 +71,67 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="theme-light" suppressHydrationWarning>
+      <head>
+        {/* Inline theme init: reads sgs-reader-prefs__v1 before first paint
+            so the user's theme, focus mode, accent, and OLED settings are
+            applied immediately — no flash of the default light theme. */}
+        <script
+          id="sggs-theme-init"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(){
+                try {
+                  var raw = localStorage.getItem('sgs-reader-prefs__v1');
+                  if (!raw) return;
+                  var prefs = JSON.parse(raw);
+                  if (!prefs || typeof prefs !== 'object') return;
+                  var theme = prefs.theme || 'light';
+                  if (prefs.isAutoTheme === true) {
+                    var m = window.matchMedia('(prefers-color-scheme: dark)');
+                    if (m.matches) theme = 'dark';
+                    else {
+                      var h = new Date().getHours();
+                      theme = (h >= 6 && h < 18) ? 'light' : 'dark';
+                    }
+                  }
+                  var root = document.documentElement;
+                  root.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                  root.classList.add('theme-' + theme);
+                  root.dataset.focusMode = prefs.isFocusMode === true ? 'on' : '';
+                  var style = root.style;
+                  var accentHex = prefs.accentHex || null;
+                  if (accentHex && /^#([0-9a-fA-F]{3}){1,2}$/.test(accentHex)) {
+                    var h = accentHex.replace('#', '');
+                    if (h.length === 3) h = h.split('').map(function(c){ return c + c; }).join('');
+                    var n = parseInt(h, 16);
+                    if (!Number.isNaN(n) && h.length === 6) {
+                      var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+                      style.setProperty('--accent', accentHex);
+                      style.setProperty('--accent-light', 'rgba(' + r + ', ' + g + ', ' + b + ', 0.12)');
+                      style.setProperty('--accent-glow', 'rgba(' + r + ', ' + g + ', ' + b + ', 0.2)');
+                    }
+                  } else {
+                    style.removeProperty('--accent');
+                    style.removeProperty('--accent-light');
+                    style.removeProperty('--accent-glow');
+                  }
+                  if (prefs.isOledTheme === true && theme !== 'light') {
+                    style.setProperty('--bg', '#000');
+                    style.setProperty('--bg-glass', 'rgba(0, 0, 0, 0.88)');
+                    style.setProperty('--surface', '#000');
+                  } else {
+                    style.removeProperty('--bg');
+                    style.removeProperty('--bg-glass');
+                    style.removeProperty('--surface');
+                  }
+                } catch (e) {
+                  // Fail silently — React hydration applies the theme after mount.
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${gurmukhi.variable} ${inter.variable} font-sans antialiased`}>
         <ReaderPrefsProvider>
           <BookmarksProvider>

@@ -24,14 +24,13 @@ export const NOTIF_PREFS_KEY = "sgs-reader-notif-prefs";
 /** localStorage key recording the last day a reminder fired (`YYYY-MM-DD`). */
 const LAST_NOTIFIED_KEY = "sgs-reader-last-notified";
 
-/** Reminder preferences: enabled flag + daily time shown as a label only. */
+/** Reminder preferences: enabled flag only. There is no scheduled time —
+ *  reminders fire check-on-visit when the app is opened on a new day. */
 export interface NotifPrefs {
   enabled: boolean;
-  /** Preferred time label (`HH:MM`, default Amrit Vela 05:00) — informational. */
-  time: string;
 }
 
-const DEFAULT_PREFS: NotifPrefs = { enabled: false, time: "05:00" };
+const DEFAULT_PREFS: NotifPrefs = { enabled: false };
 
 /** Reads validated prefs; any corruption falls back to disabled. */
 export function loadNotifPrefs(): NotifPrefs {
@@ -41,7 +40,6 @@ export function loadNotifPrefs(): NotifPrefs {
     const parsed = JSON.parse(raw) as Partial<NotifPrefs>;
     return {
       enabled: parsed.enabled === true,
-      time: typeof parsed.time === "string" && /^\d{2}:\d{2}$/.test(parsed.time) ? parsed.time : "05:00",
     };
   } catch {
     return DEFAULT_PREFS;

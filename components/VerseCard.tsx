@@ -43,11 +43,13 @@ import {
   StickyNote,
   X,
 } from "lucide-react";
+import { useSyncExternalStore } from "react";
 import type { HighlightColor, TranslationLang, VerseLine } from "@/lib/types";
 import { useReaderPrefs } from "./ReaderPrefsProvider";
-import { useBookmarks } from "./BookmarksProvider";
-import { useHighlights, HIGHLIGHT_COLORS } from "./HighlightsProvider";
-import { useVerseNotes } from "./NotesProvider";
+import { bookmarksStore } from "@/lib/bookmarksStore";
+import { highlightsStore } from "@/lib/highlightsStore";
+import { notesStore } from "@/lib/notesStore";
+import { HIGHLIGHT_COLORS } from "./HighlightsProvider";
 import { downloadShareCard } from "@/lib/shareCard";
 
 /** The four highlight colours → translucent background tints. */
@@ -90,9 +92,24 @@ export default function VerseCard({
   /** Attribution used by copy + share ("Ang N" or the bani name). */
   const sourceLabel = baniName ?? `Sri Guru Granth Sahib Ji (Ang ${angNumber})`;
   const prefs = useReaderPrefs();
-  const { isBookmarked, toggleBookmark } = useBookmarks();
-  const { getHighlight, toggleHighlight } = useHighlights();
-  const { getNote, setNote, saveNote, removeNote } = useVerseNotes();
+  /** Per-verse bookmark state — only this VerseCard re-renders when it changes. */
+  const isBookmarked = useSyncExternalStore(
+    bookmarksStore.subscribe,
+    () => bookmarksStore.get(line.verseId),
+    () => undefined,
+  );
+  /** Per-verse highlight color — only this VerseCard re-renders when it changes. */
+  const highlight = useSyncExternalStore(
+    highlightsStore.subscribe,
+    () => highlightsStore.get(line.verseId),
+    () => undefined,
+  );
+  /** Per-verse note text — only this VerseCard re-renders when it changes. */
+  const note = useSyncExternalStore(
+    notesStore.subscribe,
+    () => notesStore.get(line.verseId),
+    () => undefined,
+  );
 
   /** "Copied!" confirmation flag (resets after 2s). */
   const [copied, setCopied] = useState(false);
@@ -116,9 +133,7 @@ export default function VerseCard({
     []
   );
 
-  const saved = isBookmarked(line.verseId);
-  const highlight = getHighlight(line.verseId);
-  const note = getNote(line.verseId);
+  // isBookmarked, highlight, note are already per-verse values from useSyncExternalStore above.
 
   // -- Transliteration ------------------------------------------------------------------
 
@@ -255,9 +270,9 @@ export default function VerseCard({
 
   // -- Share as card image (feature 14) -------------------------------------------------
 
-  const handleShare = () => {
+  const handleShare = async () => {
     try {
-      downloadShareCard({
+      await downloadShareCard({
         gurmukhi: line.gurmukhi,
         transliteration: translit || line.transliteration || "",
         translation: primaryTranslation || punjabiTranslation || "",
@@ -345,12 +360,19 @@ export default function VerseCard({
             ))}
           </div>
           {wordPairs.length === 0 && (
-            <button
-              onClick={() => setWordRevealed((prev) => (prev === -1 ? null : -1))}
-              className="text-xs italic text-[var(--text-muted)] hover:text-[var(--text)] transition"
-            >
-              Tap to reveal transliteration
-            </button>
+            <>
+              <button
+                onClick={() => setWordRevealed((prev) => (prev === -1 ? null : -1))}
+                className="text-xs italic text-[var(--text-muted)] hover:text-[var(--text)] transition"
+              >
+                Tap to reveal transliteration
+              </button>
+              {wordRevealed === -1 && translit && (
+                <p className="verse-extra mt-3 text-[0.95em] italic leading-relaxed text-[var(--text-muted)]">
+                  {translit}
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
@@ -408,7 +430,7 @@ export default function VerseCard({
       dedicated commentary sources, attributable and switchable between the
       SGPC English rendering and the Punjabi teekas (Guru Granth Darpan ↑
       Darpan, Faridkot Teeka). */}
-      {prefs.showKanji && commentaryText && (
+      {prefs.showCommentary && commentaryText && (
         <div className={`verse-extra mt-4 rounded-lg border-l-2 border-[var(--accent)] bg-[var(--accent-light)]/40 px-3 py-2 ${hiddenMemorize ? "blur-sm select-none" : ""}`}>
           <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)]">
             {commentaryLabel}
@@ -424,8 +446,8 @@ export default function VerseCard({
         <div className="verse-extra mt-4 space-y-2">
           <textarea
             value={note?.text ?? ""}
-            onChange={(e) => setNote(line.verseId, e.target.value)}
-            onBlur={(e) => saveNote(line.verseId, e.target.value)}
+            onChange={(e) => notesStore.set(line.verseId, e.target.value)}
+            onBlur={(e) => notesStore.save(line.verseId, e.target.value)}
             placeholder="Write a brief reflection on this verse…"
             aria-label="Verse note"
             rows={2}
@@ -434,7 +456,7 @@ export default function VerseCard({
           />
           {note && (
             <button
-              onClick={() => removeNote(line.verseId)}
+              onClick={() => notesStore.remove(line.verseId)}
               className="text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--text)] transition"
             >
               Delete note
@@ -517,7 +539,7 @@ export default function VerseCard({
                   <button
                     key={c}
                     onClick={() => {
-                      toggleHighlight(line.verseId, c);
+                      highlightsStore.toggle(line.verseId, c);
                       setHighlightOpen(false);
                     }}
                     aria-label={`${HIGHLIGHT_LABELS[c]} highlight`}
@@ -548,21 +570,21 @@ export default function VerseCard({
           {/* Toggle bookmark */}
           <button
             onClick={() =>
-              toggleBookmark({
-                verseId: line.verseId,
+              bookmarksStore.toggle(line.verseId, {
                 angNumber,
                 gurmukhiSnippet: line.gurmukhi.slice(0, 60),
                 ...(baniToken ? { bani: baniToken } : {}),
+                savedAt: Date.now(),
               })
             }
-            aria-label={saved ? "Remove bookmark" : "Save bookmark"}
-            aria-pressed={saved}
-            title={saved ? "Remove bookmark" : "Save bookmark"}
+            aria-label={isBookmarked ? "Remove bookmark" : "Save bookmark"}
+            aria-pressed={Boolean(isBookmarked)}
+            title={isBookmarked ? "Remove bookmark" : "Save bookmark"}
             className={`flex h-11 w-11 items-center justify-center rounded-lg transition active:scale-[0.97] ${
-              saved ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:bg-[var(--surface-active)] hover:text-[var(--text)]"
+              isBookmarked ? "text-[var(--accent)]" : "text-[var(--text-muted)] hover:bg-[var(--surface-active)] hover:text-[var(--text)]"
             }`}
           >
-            {saved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+            {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
           </button>
         </div>
       </div>

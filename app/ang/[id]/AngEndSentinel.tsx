@@ -27,6 +27,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { KhandaIcon } from "@/components/SikhSymbols";
+import { useReaderPrefs } from "@/components/ReaderPrefsProvider";
 
 export default function AngEndSentinel({
   angNumber,
@@ -38,6 +39,7 @@ export default function AngEndSentinel({
   onEndReached: (ang: number) => Promise<boolean>;
 }) {
   const router = useRouter();
+  const { isAutoAdvance } = useReaderPrefs();
   const nextAng = angNumber + 1;
   const isLastAng = angNumber >= maxAng;
 
@@ -97,9 +99,11 @@ export default function AngEndSentinel({
   }, [isLastAng, nextAng, router]);
 
   // -- IntersectionObserver auto-advance -------------------------------------
+  // Only auto-advances when the user has opted in via isAutoAdvance pref.
+  // The manual Continue button always works regardless.
 
   useEffect(() => {
-    if (isLastAng || triggered) return;
+    if (!isAutoAdvance || isLastAng || triggered) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -115,7 +119,7 @@ export default function AngEndSentinel({
     }
 
     return () => observer.disconnect();
-  }, [isLastAng, triggered, handleAdvance]);
+  }, [isAutoAdvance, isLastAng, triggered, handleAdvance]);
 
   // -- Final Ang: completion message -----------------------------------------
 

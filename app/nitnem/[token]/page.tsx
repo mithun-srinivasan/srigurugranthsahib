@@ -14,12 +14,15 @@
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Settings2 } from "lucide-react";
 import { getBani } from "@/lib/data";
 import { NITNEM_BANIS } from "@/lib/nitnem";
-import { MAX_ANG, MIN_ANG } from "@/lib/types";
+import { MAX_ANG, MIN_ANG, type Bani } from "@/lib/types";
 import VerseCard from "@/components/VerseCard";
+import FocusModeExit from "@/components/FocusModeExit";
+import ReaderControls from "@/components/ReaderControls";
 
 interface PageProps {
   params: Promise<{ token: string }>;
@@ -40,13 +43,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function BaniPage({ params }: PageProps) {
-  const { token } = await params;
-  const meta = NITNEM_BANIS.find((b) => b.token === token);
-  if (!meta) notFound();
-
-  const bani = await getBani(meta.id);
-  if (!bani) notFound();
+/** Synchronous client component that holds the settings-popover state. */
+function BaniPageContent({ bani }: { bani: Bani }) {
+  /** Whether the ReaderControls settings popover is open. */
+  const [controlsOpen, setControlsOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
@@ -65,7 +65,29 @@ export default async function BaniPage({ params }: PageProps) {
               {bani.verses.length} verses · {bani.time}
             </p>
           </div>
+          <button
+            onClick={() => setControlsOpen((o) => !o)}
+            aria-label="Reader Settings"
+            aria-expanded={controlsOpen}
+            title="Settings & Display"
+            className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all active:scale-[0.97] ${
+              controlsOpen
+                ? "bg-[var(--accent)] text-white"
+                : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+            }`}
+          >
+            <Settings2 size={18} />
+          </button>
         </div>
+
+        {/* Popover settings panel — rendered immediately below the header when open */}
+        {controlsOpen && (
+          <div className="mx-auto max-w-3xl px-4 pb-3">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-popover)] transition-all animate-in fade-in slide-in-from-top-2">
+              <ReaderControls />
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto max-w-3xl px-5 pb-28 pt-6 sm:px-8">
@@ -88,6 +110,20 @@ export default async function BaniPage({ params }: PageProps) {
           />
         ))}
       </main>
+
+      {/* Focus Mode exit — always visible when focus mode is on */}
+      <FocusModeExit />
     </div>
   );
+}
+
+export default async function BaniPage({ params }: PageProps) {
+  const { token } = await params;
+  const meta = NITNEM_BANIS.find((b) => b.token === token);
+  if (!meta) notFound();
+
+  const bani = await getBani(meta.id);
+  if (!bani) notFound();
+
+  return <BaniPageContent bani={bani} />;
 }

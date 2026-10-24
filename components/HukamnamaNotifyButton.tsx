@@ -55,7 +55,7 @@ export default function HukamnamaNotifyButton() {
   useEffect(() => {
     if (!hydrated) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => saveNotifPrefs({ enabled, time: "05:00" }), 500);
+    saveTimerRef.current = setTimeout(() => saveNotifPrefs({ enabled }), 500);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
@@ -78,8 +78,8 @@ export default function HukamnamaNotifyButton() {
     permission === "denied"
       ? "Notifications blocked — allow them in your browser settings to get reminders"
       : enabled
-        ? "Daily Hukamnama reminders on — tap to turn off"
-        : "Remind me daily about the Hukamnama";
+        ? "Reminder on — notifies when you open the app each day"
+        : "Remind me each day I open the app";
 
   return (
     <button
