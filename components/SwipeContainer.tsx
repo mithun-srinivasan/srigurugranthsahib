@@ -14,7 +14,7 @@
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
-import { clampAng } from "@/lib/data";
+import { clampAng } from "@/lib/ang";
 import { MAX_ANG, MIN_ANG } from "@/lib/types";
 
 export default function SwipeContainer({

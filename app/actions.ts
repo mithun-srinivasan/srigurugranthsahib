@@ -12,7 +12,7 @@
 
 "use server";
 
-import { getHukamnama, getShabadOfDay } from "@/lib/data";
+import { getHukamnama, getDeterministicShabadOfDay } from "@/lib/data";
 import type { DailyShabad, HukamnamaInfo } from "@/lib/types";
 
 /**
@@ -24,9 +24,10 @@ export async function getTodaysHukamnama(): Promise<HukamnamaInfo | null> {
 }
 
 /**
- * Returns a random shabad for the Shabad of the Day card.
- * Day-stability is handled client-side (localStorage date-keyed cache).
+ * Returns a deterministic shabad for the Shabad of the Day card.
+ * Same shabad for everyone on a given date (date-keyed, not random).
+ * Day-stability is also handled client-side (localStorage date-keyed cache).
  */
 export async function getDailyShabad(): Promise<DailyShabad | null> {
-  return getShabadOfDay();
+  return getDeterministicShabadOfDay();
 }

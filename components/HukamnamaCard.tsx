@@ -293,9 +293,15 @@ function HukamnamaAudioPlayer({
   );
 }
 
-export default function HukamnamaCard() {
-  const [hukamnama, setHukamnama] = useState<HukamnamaInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function HukamnamaCard({
+  info: serverInfo,
+}: {
+  /** Data fetched by the server component (HukamnamaServer). When provided,
+   *  the card skips its own client-side fetch and renders immediately. */
+  info?: HukamnamaInfo | null;
+}) {
+  const [hukamnama, setHukamnama] = useState<HukamnamaInfo | null>(serverInfo ?? null);
+  const [loading, setLoading] = useState(!serverInfo);
   /** True when showing the saved copy because the live fetch failed/timed out. */
   const [stale, setStale] = useState(false);
   /** Hides the SGPC image slot when the remote file 403s/404s (deployed hotlink). */
@@ -305,6 +311,17 @@ export default function HukamnamaCard() {
   const [showTranslation, setShowTranslation] = useState(true);
 
   useEffect(() => {
+    // Server-provided data needs no client fetch — just seed the cache and render.
+    if (serverInfo) {
+      if (serverInfo.lines.length > 0) {
+        writeHukamCache(serverInfo);
+        void maybeNotifyHukamnama(serverInfo);
+      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- server-provided data needs no client fetch
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     // Bounded fetch: on slow mobile data the server action's own retries
     // would otherwise hold the skeleton for ~a minute. A timeout here drops
@@ -339,7 +356,7 @@ export default function HukamnamaCard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serverInfo]);
 
   // -- Loading skeleton ------------------------------------------------------
 

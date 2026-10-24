@@ -26,7 +26,7 @@ interface Upcoming {
 }
 
 export default function GurpurabCalendar() {
-  const { year, gurpurabs, source, refresh } = useSgpcCalendar();
+  const { year, gurpurabs, source, refresh, isFallback } = useSgpcCalendar();
   const [upcoming, setUpcoming] = useState<Upcoming[] | null>(null);
 
   useEffect(() => {
@@ -78,7 +78,22 @@ export default function GurpurabCalendar() {
         </div>
       </div>
 
-      {upcoming.length === 0 ? (
+        {isFallback && (
+          <p className="mt-3 text-xs text-[var(--text-muted)]">
+            Dates for Nanakshahi year {year} are not yet published by SGPC —
+            showing bundled Samvat 558 data. Gurpurab dates may be inaccurate
+            for this year.{" "}
+            <button
+              onClick={refresh}
+              className="ml-2 underline underline-offset-4 hover:text-[var(--accent)] text-xs"
+              aria-label="Check for new SGPC calendar release"
+            >
+              Check for update
+            </button>
+          </p>
+        )}
+
+        {upcoming.length === 0 ? (
         <p className="mt-3 text-xs text-[var(--text-muted)]">
           No major Gurpurabs in the next 60 days.
         </p>

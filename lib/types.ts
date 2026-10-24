@@ -292,7 +292,5 @@ export interface ReaderPrefs {
   translitStyle: TranslitStyle;
 }
 
-/** Lower bound of valid Ang numbers (inclusive). */
-export const MIN_ANG = 1;
-/** Upper bound of valid Ang numbers (inclusive). */
-export const MAX_ANG = 1430;
+/** Lower bound of valid Ang numbers (inclusive) — re-exported from lib/ang.ts. */
+export { MIN_ANG, MAX_ANG } from "./ang";

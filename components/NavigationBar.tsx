@@ -39,7 +39,7 @@ import {
   Printer,
 } from "lucide-react";
 import { MAX_ANG, MIN_ANG } from "@/lib/types";
-import { clampAng } from "@/lib/data";
+import { clampAng } from "@/lib/ang";
 import { useReaderPrefs } from "./ReaderPrefsProvider";
 import ReaderControls from "./ReaderControls";
 
@@ -338,6 +338,7 @@ export default function NavigationBar({ angNumber }: { angNumber: number }) {
 
           <Link
             href={`/ang/${angNumber}/print`}
+            prefetch={false}
             aria-label="Print this Ang"
             title="Print / Save as PDF"
             className="flex h-11 w-11 items-center justify-center rounded-xl text-[var(--text-muted)] transition-colors hover:text-[var(--text)] hover:bg-[var(--surface-hover)] active:scale-[0.97]"

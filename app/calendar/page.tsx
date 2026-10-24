@@ -32,8 +32,19 @@ interface DayCell {
 
 export default function CalendarPage() {
   const now = new Date();
+  // Start with a fixed default so SSR and hydration never mismatch; correct
+  // to the viewer's actual month once mounted (see useEffect below).
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-based
+
+  // Correct to the client's actual date after mount so prerendered HTML
+  // (server date) never mismatches the client's date in a different timezone.
+  useEffect(() => {
+    const today = new Date();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialise month from client date post-mount to avoid hydration mismatch
+    setViewYear(today.getFullYear());
+    setViewMonth(today.getMonth());
+  }, []);
 
   // Active SGPC year follows the viewed month (auto-updates when a new
   // `/data/sgpc-<year>.json` release exists).

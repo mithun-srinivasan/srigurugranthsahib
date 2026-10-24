@@ -43,16 +43,28 @@ function readCached(today: string): DailyShabad | null {
   }
 }
 
-export default function ShabadOfDayCard() {
-  const [shabad, setShabad] = useState<DailyShabad | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function ShabadOfDayCard({
+  shabad: serverShabad,
+}: {
+  /** Data fetched by the server component (ShabadOfDayServer). When provided,
+   *  the card skips its own client-side fetch and renders immediately. */
+  shabad?: DailyShabad | null;
+}) {
+  const [shabad, setShabad] = useState<DailyShabad | null>(serverShabad ?? null);
+  const [loading, setLoading] = useState(!serverShabad);
 
   useEffect(() => {
+    // Server-provided data needs no client fetch — just seed the cache and render.
+    if (serverShabad) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- server-provided data needs no client fetch
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     const today = dayKey();
     const cached = readCached(today);
     if (cached) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- seed from date-keyed localStorage cache post-mount
       setShabad(cached);
       setLoading(false);
       return;
@@ -83,7 +95,7 @@ export default function ShabadOfDayCard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serverShabad]);
 
   if (loading) {
     return (

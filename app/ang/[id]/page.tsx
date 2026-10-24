@@ -32,7 +32,8 @@
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getAng, parseAngParam } from "@/lib/data";
+import { getAng } from "@/lib/data";
+import { parseAngParam } from "@/lib/ang";
 import { MAX_ANG, MIN_ANG, type Ang } from "@/lib/types";
 import NavigationBar from "@/components/NavigationBar";
 import SwipeContainer from "@/components/SwipeContainer";

@@ -13,9 +13,12 @@
  * response can never crash the app — missing data becomes `undefined`/`[]`.
  */
 
+import "server-only";
+
 import { cache } from "react";
 import type { Ang, Bani, DailyShabad, HukamnamaInfo, SearchResult, VerseLine } from "./types";
 import { MAX_ANG, MIN_ANG } from "./types";
+import { clampAng } from "./ang";
 import { NITNEM_BANIS } from "./nitnem";
 
 /** Base URL of the public BaniDB v2 REST API. */
@@ -503,6 +506,40 @@ export async function getShabadOfDay(): Promise<DailyShabad | null> {
 }
 
 /**
+ * Returns the same shabad for everyone on a given calendar date —
+ * deterministic by date, not random. Derives an Ang number from the day of
+ * year (stable across time zones because it uses the local date) and fetches
+ * that Ang's verses via `getAng`. This runs in a server component / route
+ * handler, so the result is in the HTML on first paint.
+ *
+ * @param d the local date (defaults to now)
+ * @returns the DailyShabad for that date, or null on fetch failure
+ */
+export async function getDeterministicShabadOfDay(d: Date = new Date()): Promise<DailyShabad | null> {
+  // Day of year (1-366), computed from the local date so all viewers see the
+  // same shabad on the same calendar day regardless of time zone.
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = d.getTime() - start.getTime();
+  const oneDay = 1000 * 60 * 60 * 24;
+  const dayOfYear = Math.floor(diff / oneDay);
+
+  // Map deterministically onto the valid Ang range.
+  const ang = ((dayOfYear - 1) % MAX_ANG) + 1;
+
+  try {
+    const angData = await getAng(ang);
+    if (!angData || angData.lines.length === 0) return null;
+    return {
+      ang: angData.angNumber,
+      raag: angData.raagNameEn ?? undefined,
+      verses: angData.lines,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Full-text search across Sri Guru Granth Sahib Ji via BaniDB's search endpoint.
  * Used by `app/search/page.tsx` through the `runSearch` server action.
  *
@@ -544,26 +581,6 @@ export async function searchGurbani(term: string, lang: "pa" | "en" = "pa"): Pro
   } catch {
     return []; // fail soft — a broken search must not break the page
   }
-}
-
-/**
- * Normalises any number into the valid Ang range [MIN_ANG, MAX_ANG].
- * Used by every navigation site (swipes, arrow keys, controls) so a user can
- * never navigate to a non-existent page.
- *
- * @param n any number (may be NaN)
- * @returns a clamped Ang number, defaulting to MIN_ANG for NaN
- */
-export function clampAng(n: number): number {
-  if (Number.isNaN(n)) return MIN_ANG;
-  return Math.min(MAX_ANG, Math.max(MIN_ANG, n));
-}
-
-/** Parses an Ang route segment exactly; `1abc`, decimals, and signs are invalid. */
-export function parseAngParam(value: string): number | null {
-  if (!/^[1-9]\d*$/.test(value)) return null;
-  const ang = Number(value);
-  return Number.isSafeInteger(ang) && ang >= MIN_ANG && ang <= MAX_ANG ? ang : null;
 }
 
 /**

@@ -27,7 +27,8 @@
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getAng, parseAngParam } from "@/lib/data";
+import { getAng } from "@/lib/data";
+import { parseAngParam } from "@/lib/ang";
 import { MIN_ANG, MAX_ANG, type Ang } from "@/lib/types";
 import PrintAng from "./PrintAng";
 import AngUnavailable from "../AngUnavailable";

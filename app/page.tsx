@@ -315,7 +315,7 @@ export default function HomePage() {
           <HukamnamaCard />
 
           {/* -------------------------------------------------------------- */}
-          {/* Shabad of the Day — a random shabad, stable for the whole day   */}
+          {/* Shabad of the Day — deterministic by date, same for everyone     */}
           {/* -------------------------------------------------------------- */}
           <ShabadOfDayCard />
 

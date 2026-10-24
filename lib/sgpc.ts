@@ -141,6 +141,9 @@ export interface ActiveSgpcCalendar {
   gregorianSpan?: string;
   refresh: () => void;
   refreshTick: number;
+  /** True when bundled Samvat 558 data is standing in for a year whose JSON
+   *  has not been published yet (no /data/sgpc-<year>.json and no cache). */
+  isFallback: boolean;
 }
 
 /**
@@ -193,5 +196,15 @@ export function useSgpcCalendar(anchor?: Date): ActiveSgpcCalendar {
     };
   }, [year, refreshTick]);
 
-  return { year, months, gurpurabs, source, updatedAt, gregorianSpan, refresh, refreshTick };
+  return {
+    year,
+    months,
+    gurpurabs,
+    source,
+    updatedAt,
+    gregorianSpan,
+    refresh,
+    refreshTick,
+    isFallback: source === "bundled" && year !== SGPC_BUNDLED_YEAR,
+  };
 }
