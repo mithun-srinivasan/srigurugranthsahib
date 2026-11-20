@@ -306,6 +306,14 @@ export default function HomePage() {
                 <Shuffle size={16} className="text-[var(--accent)]" />
                 <span>Random Ang</span>
               </button>
+
+              <Link
+                href="/search"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]/80 px-5 py-3 text-xs font-semibold text-[var(--text)] backdrop-blur-md transition hover:border-[var(--accent)] hover:bg-[var(--surface-hover)] active:scale-[0.97]"
+              >
+                <Search size={16} className="text-[var(--accent)]" />
+                <span>Search Gurbani</span>
+              </Link>
             </div>
           </section>
 
